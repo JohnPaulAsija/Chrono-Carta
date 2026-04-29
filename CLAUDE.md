@@ -29,12 +29,12 @@ These are the constraints most likely to be silently broken if you don't know ab
 
 There are **two** server-side Supabase clients with very different security profiles, and they must not cross route groups:
 
-- `getGameClient()` — uses `SUPABASE_SERVICE_ROLE_KEY`, **bypasses RLS**. Used **only** in `app/(game)/actions.ts`. Access control for gameplay is the signed JWT game state token, not RLS.
+- `getGameClient()` — uses `SUPABASE_SECRET_KEY` (the modern `sb_secret_*` key, Postgres `service_role`), **bypasses RLS**. Used **only** in `app/(game)/actions.ts`. Access control for gameplay is the signed JWT game state token, not RLS.
 - `getCuratorClient(session)` — built from the curator's JWT, **respects RLS**. Used **only** in `app/(admin)/actions.ts`. The required `session` parameter is a deliberate guardrail: you can't construct one without an authenticated session.
 
-A cross-import between these route groups (e.g., `getGameClient` imported into the admin actions, or vice versa) is an immediate red flag. If the service role leaks into the admin path, RLS is silently bypassed and curators can edit each other's maps. If the curator client is used in gameplay, anonymous players hit permission errors and the game breaks.
+A cross-import between these route groups (e.g., `getGameClient` imported into the admin actions, or vice versa) is an immediate red flag. If the secret key leaks into the admin path, RLS is silently bypassed and curators can edit each other's maps. If the curator client is used in gameplay, anonymous players hit permission errors and the game breaks.
 
-The browser-side anon client is for **Supabase Auth session management only** — never for data reads or writes.
+The browser-side publishable-key client is for **Supabase Auth session management only** — never for data reads or writes.
 
 ### 2. The correct answer must never reach the client before a guess
 
@@ -56,7 +56,7 @@ The JWT lives in React state for the duration of the session — **not** localSt
 
 ```
 app/
-├── (game)/         # uses getGameClient() — anon players, service-role reads
+├── (game)/         # uses getGameClient() — anon players, secret-key reads bypass RLS
 └── (admin)/        # uses getCuratorClient(session) — authenticated curators, RLS-enforced
 ```
 
@@ -97,16 +97,20 @@ Below ~768px, render a "best on a larger screen" message rather than a degraded 
 | Variable | Where | Purpose |
 |---|---|---|
 | `SUPABASE_URL` | server + client | Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client | Browser-side auth only |
-| `SUPABASE_SERVICE_ROLE_KEY` | server only | `getGameClient()` — bypasses RLS, never expose |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client | `sb_publishable_*` key, browser-side auth only |
+| `SUPABASE_SECRET_KEY` | server only | `sb_secret_*` key — `getGameClient()`, bypasses RLS, never expose |
 | `GAME_STATE_SECRET` | server only | Signs/verifies game state JWTs |
 | `ROUNDS_PER_GAME` | server | Default 10 |
 
-Test suite uses a separate Supabase project: `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY`, `SUPABASE_TEST_SERVICE_ROLE_KEY` (CI secrets / `.env.test`, gitignored).
+Test suite runs against a Supabase **branch** of the main project (the `TEST` branch pre-launch — same Supabase project, isolated database): `SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY`, `SUPABASE_TEST_SECRET_KEY` (CI secrets / `.env.local`, gitignored).
 
 ## Database & Migrations
 
-Schema is managed via Supabase CLI migrations in `supabase/migrations/` (version-controlled). `supabase/seed.sql` populates the three roles (`admin`, `curator`, `player`). All development migrations are tested against the test project before any production deploy. The production project doesn't exist yet — it's created at v1 launch and `supabase db push` applies the accumulated migrations.
+Schema is managed via Supabase CLI migrations in `supabase/migrations/` (version-controlled), applied to the live project via the Supabase MCP's `apply_migration` tool. `supabase/seed.sql` populates the three roles (`admin`, `curator`, `player`).
+
+**Branch workflow — TEST-first, always.** All migrations, seed inserts, ad-hoc SQL, and other database operations target the `TEST` branch (project ref `gcojdomtucucxhjcmays`) first. Once verified there, the changes are promoted to `main` via `merge_branch`. Never apply migrations or run `execute_sql` directly against the `main` branch; doing so creates drift between the two branches and bypasses the verification step. The only exception is data that is intentionally main-branch-only — none in v1.
+
+The production project doesn't exist yet — it's created at v1 launch and the accumulated migrations are applied at that point.
 
 ## Out of Scope for v1
 

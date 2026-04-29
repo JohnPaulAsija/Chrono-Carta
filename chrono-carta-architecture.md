@@ -151,9 +151,9 @@ Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending o
 - **Database:** Supabase Postgres for map metadata (including pre-filtered GeoJSON), user accounts, and roles
 - **Map rendering:** `react-simple-maps` for GeoJSON polygon rendering with D3 geo projections
 - **Supabase clients:** Two server-side clients with distinct security profiles (see Project Structure below), plus a client-side instance for auth session management only:
-  - `getGameClient()` — uses the service role key. Bypasses RLS. Used exclusively in gameplay Server Actions where there is no authenticated user and the game state token handles access control.
+  - `getGameClient()` — uses the Supabase **secret key** (Postgres `service_role`). Bypasses RLS. Used exclusively in gameplay Server Actions where there is no authenticated user and the game state token handles access control.
   - `getCuratorClient(session)` — created from the curator's JWT. Respects RLS. Used in all admin panel Server Actions. The session parameter is a natural guardrail — you can't use this client without actively extracting an auth session.
-  - Client-side anon instance — uses `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Used in the browser only for Supabase Auth session management (login, logout, session refresh). Never used for data reads or writes.
+  - Client-side instance — uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the `sb_publishable_*` key, which authenticates as the Postgres `anon` / `authenticated` roles). Used in the browser only for Supabase Auth session management (login, logout, session refresh). Never used for data reads or writes.
 
 ### Key Views
 
@@ -225,9 +225,9 @@ app/
 
 lib/
 ├── supabase/
-│   ├── game-client.ts         # getGameClient() — service role key, bypasses RLS
+│   ├── game-client.ts         # getGameClient() — secret key, bypasses RLS
 │   ├── curator-client.ts      # getCuratorClient(session) — user JWT, respects RLS
-│   └── browser-client.ts      # createBrowserClient() — anon key, auth only
+│   └── browser-client.ts      # createBrowserClient() — publishable key, auth only
 ├── cliopatria.ts              # loadCliopatria(), filterByYear(), stripYearData()
 ├── game-state.ts              # signToken(), verifyToken(), formatAnswer(), assembleOptions()
 └── map-colors.ts              # assignColors() — graph coloring for entity polygons
@@ -358,21 +358,23 @@ The map is live and playable immediately. If a curator later edits a map's corre
 
 ## Environment & Configuration
 
+Supabase API keys follow the modern naming convention: a `sb_publishable_*` key for browser-safe access (Postgres `anon` / `authenticated` roles, RLS-enforced) and an `sb_secret_*` key for server-only full access (Postgres `service_role`, bypasses RLS). The legacy `anon` JWT and `service_role` JWT formats are not used.
+
 | Variable | Context | Purpose |
 |---|---|---|
 | `SUPABASE_URL` | Server & client | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client | Public anon key (safe for browser, RLS enforced). Prefixed with `NEXT_PUBLIC_` so Next.js exposes it to client components. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Full database access, bypasses RLS. Used exclusively in `getGameClient()` for gameplay reads. **Must never be exposed to the client.** Stored in Firebase App Hosting's Cloud Secret Manager integration. |
-| `GAME_STATE_SECRET` | Server only | Secret key for signing and verifying game state JWTs. Stored alongside the service role key in Cloud Secret Manager. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client | Publishable key (`sb_publishable_*`). Safe for the browser; RLS enforces access. Prefixed with `NEXT_PUBLIC_` so Next.js exposes it to client components. |
+| `SUPABASE_SECRET_KEY` | Server only | Secret key (`sb_secret_*`). Full database access, bypasses RLS. Used exclusively in `getGameClient()` for gameplay reads. **Must never be exposed to the client.** Stored in Firebase App Hosting's Cloud Secret Manager integration. |
+| `GAME_STATE_SECRET` | Server only | Secret used to sign and verify game state JWTs. Stored alongside the Supabase secret key in Cloud Secret Manager. |
 | `ROUNDS_PER_GAME` | Server | Number of maps per session (default: 10) |
 
-**Test environment:** The integration test suite uses a separate Supabase project with its own credentials, stored as CI secrets or in a local `.env.test` file (gitignored):
+**Test environment:** The integration test suite runs against a Supabase **branch** of the main project (pre-launch the same project hosts both dev on the `main` branch and tests on the `TEST` branch). Test credentials live in CI secrets or a local `.env.local` (gitignored):
 
 | Variable | Purpose |
 |---|---|
-| `SUPABASE_TEST_URL` | Test project URL |
-| `SUPABASE_TEST_ANON_KEY` | Test project anon key |
-| `SUPABASE_TEST_SERVICE_ROLE_KEY` | Test project service role key |
+| `SUPABASE_TEST_URL` | Test branch URL |
+| `SUPABASE_TEST_PUBLISHABLE_KEY` | Test branch publishable key |
+| `SUPABASE_TEST_SECRET_KEY` | Test branch secret key |
 
 ## Testing
 
@@ -510,7 +512,7 @@ Firebase App Hosting connects directly to the GitHub repo and builds automatical
 
 ### Secrets Management
 
-Production secrets (`SUPABASE_SERVICE_ROLE_KEY`, `GAME_STATE_SECRET`) live in Firebase App Hosting's Cloud Secret Manager and are never referenced in CI. Test project credentials live in GitHub Actions secrets. No secrets are committed to the repo.
+Production secrets (`SUPABASE_SECRET_KEY`, `GAME_STATE_SECRET`) live in Firebase App Hosting's Cloud Secret Manager and are never referenced in CI. Test branch credentials live in GitHub Actions secrets. No secrets are committed to the repo.
 
 ## Row-Level Security
 
@@ -518,7 +520,7 @@ RLS policies enforce access at the database level, independent of application co
 
 The two-client pattern determines which policies apply in each context:
 
-- **`getGameClient()`** (service role key) **bypasses RLS entirely.** Gameplay Server Actions use this client to read map data (including `geojson_data`), check answers, and return reveal text for anonymous players. Access control for gameplay is handled by the signed game state token, not by RLS.
+- **`getGameClient()`** (Supabase secret key) **bypasses RLS entirely.** Gameplay Server Actions use this client to read map data (including `geojson_data`), check answers, and return reveal text for anonymous players. Access control for gameplay is handled by the signed game state token, not by RLS.
 - **`getCuratorClient(session)`** (user JWT) **respects RLS.** Admin panel Server Actions use this client for all database operations. The policies below govern what curators and admins can do.
 
 ### Policies enforced via `getCuratorClient(session)`
@@ -548,7 +550,7 @@ The two-client pattern determines which policies apply in each context:
 
 ### Key security invariant
 
-The service role key (`getGameClient()`) is used **only** in `app/(game)/actions.ts`. The curator client (`getCuratorClient(session)`) is used **only** in `app/(admin)/actions.ts`. This boundary is enforced by project structure convention (see Project Structure above) and verified in code review. If the service role client is used in the admin panel, RLS is silently bypassed and curators can edit anyone's maps. If the curator client is used in gameplay, anonymous players get permission errors and the game breaks.
+The secret-key client (`getGameClient()`) is used **only** in `app/(game)/actions.ts`. The curator client (`getCuratorClient(session)`) is used **only** in `app/(admin)/actions.ts`. This boundary is enforced by project structure convention (see Project Structure above) and verified in code review. If the secret-key client is used in the admin panel, RLS is silently bypassed and curators can edit anyone's maps. If the curator client is used in gameplay, anonymous players get permission errors and the game breaks.
 
 ### CSRF and Cross-Origin Protection
 
