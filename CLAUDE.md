@@ -114,6 +114,13 @@ Schema is managed via Supabase CLI migrations in `supabase/migrations/` (version
 
 The production project doesn't exist yet — it's created at v1 launch and the accumulated migrations are applied at that point.
 
+## Pending Follow-Ups
+
+Tracked here so they don't get lost. Each entry should name a date/window for action and the rough scope.
+
+- **Bump GitHub Actions runners off Node.js 20** — flagged by the CI deprecation notice on the Phase 4 run. `actions/checkout@v4` and `actions/setup-node@v4` run on Node 20, which gets removed from runners **2026-09-16**. Revisit around **mid-to-late May 2026**: either pin newer action major versions (e.g. `actions/checkout@v5` once stable) or set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` on the workflow. Not blocking anything until well past v1 launch.
+- **Move App Hosting backend to `us-west1`** — current backend is in `us-east4`; Supabase is in `us-west-2`. Recreate before public launch to cut ~50–75 ms off Server-Action latency.
+
 ## Out of Scope for v1
 
 Player accounts, leaderboards, tiered guessing, themed decks, timed mode, performance/load testing, visual regression. The `player` role exists in the schema to support future leaderboard work without a migration, but is unused in v1.
