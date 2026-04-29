@@ -10,7 +10,7 @@ const config: Config = {
       transform: {
         "^.+\\.(ts|tsx)$": [
           "ts-jest",
-          { tsconfig: "<rootDir>/tsconfig.json", isolatedModules: true },
+          { tsconfig: "<rootDir>/tsconfig.json" },
         ],
       },
       moduleNameMapper: {
@@ -24,7 +24,7 @@ const config: Config = {
       transform: {
         "^.+\\.ts$": [
           "ts-jest",
-          { tsconfig: "<rootDir>/tsconfig.json", isolatedModules: true },
+          { tsconfig: "<rootDir>/tsconfig.json" },
         ],
       },
       moduleNameMapper: {
