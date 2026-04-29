@@ -1,12 +1,22 @@
 # ChronoCarta Bootstrap Plan
 
-> **For Claude:** Use superpowers:executing-plans to implement this plan task-by-task. Each phase ends in a commit (and a PR once CI is live in Phase 4).
+> **For Claude:** Use superpowers:executing-plans to implement this plan task-by-task. Each phase ends in a commit (and a PR once CI is live).
 
 **Goal:** Stand up the foundation — Next.js scaffold, Supabase test project, RLS policies validated by integration tests, Firebase App Hosting, and CI — so subsequent feature plans build against a known-good security boundary.
 
-**Architecture:** Per [chrono-carta-architecture.md](../../chrono-carta-architecture.md). Two-client Supabase pattern (gameplay uses service role + signed JWT, admin uses user JWT + RLS). One Supabase project pre-launch — the test project doubles as dev. The production project and its secrets are not created until v1 launch.
+**Architecture:** Per [chrono-carta-architecture.md](../../chrono-carta-architecture.md). Two-client Supabase pattern (gameplay uses the secret key + signed JWT, admin uses user JWT + RLS). One Supabase project pre-launch with two branches: `main` (dev) and `TEST` (integration tests). The production project and its secrets are not created until v1 launch.
 
 **Tech Stack:** Next.js App Router (TypeScript), Supabase Postgres + Auth, Jest + React Testing Library + Playwright, Firebase App Hosting (Cloud Run), GitHub Actions.
+
+## Execution-time deviations from this plan
+
+These are decisions made during execution that diverge from the original plan. They are documented here rather than rewriting earlier phase sections so the chronology stays legible.
+
+- **Phase 3 ↔ Phase 4 swap.** CI/CD is set up immediately after the Next.js scaffold (the original Phase 4) so that Phase 3's TDD work runs under green CI from commit one. The integration-test job is wired in as a no-op (`--passWithNoTests`) until Phase 3 lands tests; then it activates automatically. Recorded 2026-04-29.
+- **Supabase branching.** The architecture's "test project doubles as dev" guidance is realised as one Supabase project with two branches — `main` (project ref `dyswgwgmilmjjmtmuwdf`) for dev, `TEST` (project ref `gcojdomtucucxhjcmays`) for integration tests. CLAUDE.md captures the TEST-first migration workflow.
+- **Live infra is managed via the Supabase MCP** (apply_migration, execute_sql, etc.) rather than the CLI's `db push` against a local Docker stack. The CLI is still installed for migration authoring and link operations. `supabase init`'s `config.toml` was deleted because we never run a local Docker stack.
+- **Modern Supabase key naming** (`sb_publishable_*` / `sb_secret_*`) is used throughout — env vars are `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. The legacy anon JWT / service-role JWT format is not used. Architecture §Environment & Configuration is the source of truth.
+- **App Hosting region is `us-east4`**, not the optimal `us-west1` for Supabase (`us-west-2`). This is a pre-launch suboptimality — recreate the backend in `us-west1` before public launch to cut Server-Action latency by 50–75 ms.
 
 ---
 
