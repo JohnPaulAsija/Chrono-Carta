@@ -17,6 +17,7 @@ These are decisions made during execution that diverge from the original plan. T
 - **Live infra is managed via the Supabase MCP** (apply_migration, execute_sql, etc.) rather than the CLI's `db push` against a local Docker stack. The CLI is still installed for migration authoring and link operations. `supabase init`'s `config.toml` was deleted because we never run a local Docker stack.
 - **Modern Supabase key naming** (`sb_publishable_*` / `sb_secret_*`) is used throughout — env vars are `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. The legacy anon JWT / service-role JWT format is not used. Architecture §Environment & Configuration is the source of truth.
 - **App Hosting region is `us-east4`**, not the optimal `us-west1` for Supabase (`us-west-2`). This is a pre-launch suboptimality — recreate the backend in `us-west1` before public launch to cut Server-Action latency by 50–75 ms.
+- **`SUPABASE_URL` renamed to `NEXT_PUBLIC_SUPABASE_URL`** during Phase 3. The architecture's table marked the URL as "Server & client" but the variable name lacked the `NEXT_PUBLIC_` prefix Next.js requires for client visibility. The browser auth client needs the URL in client bundles, so we renamed; server code reads the same variable. Architecture doc updated.
 
 ---
 

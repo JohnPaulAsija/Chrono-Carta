@@ -9,11 +9,11 @@ import {
 // an unauthenticated call is a compile-time error, not a silent
 // security bug at runtime.
 export function getCuratorClient(session: Session): SupabaseClient {
-  const url = process.env.SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
     throw new Error(
-      "getCuratorClient requires SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "getCuratorClient requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     );
   }
   return createClient(url, key, {

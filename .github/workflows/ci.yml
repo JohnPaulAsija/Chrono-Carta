@@ -25,7 +25,7 @@ jobs:
       # We point the build at the TEST branch — same Supabase project,
       # safe values to expose, and means CI never depends on production
       # values.
-      SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SECRET_KEY }}
       ROUNDS_PER_GAME: "10"

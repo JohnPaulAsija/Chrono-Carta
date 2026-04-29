@@ -362,7 +362,7 @@ Supabase API keys follow the modern naming convention: a `sb_publishable_*` key 
 
 | Variable | Context | Purpose |
 |---|---|---|
-| `SUPABASE_URL` | Server & client | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_URL` | Server & client | Supabase project URL. The `NEXT_PUBLIC_` prefix is required so Next.js inlines it into client bundles for the browser auth client; server code reads the same variable. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client | Publishable key (`sb_publishable_*`). Safe for the browser; RLS enforces access. Prefixed with `NEXT_PUBLIC_` so Next.js exposes it to client components. |
 | `SUPABASE_SECRET_KEY` | Server only | Secret key (`sb_secret_*`). Full database access, bypasses RLS. Used exclusively in `getGameClient()` for gameplay reads. **Must never be exposed to the client.** Stored in Firebase App Hosting's Cloud Secret Manager integration. |
 | `GAME_STATE_SECRET` | Server only | Secret used to sign and verify game state JWTs. Stored alongside the Supabase secret key in Cloud Secret Manager. |
