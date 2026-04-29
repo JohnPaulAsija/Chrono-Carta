@@ -78,6 +78,8 @@ Below ~768px, render a "best on a larger screen" message rather than a degraded 
 
 **PRs:** One coherent story per PR, readable top-to-bottom in one sitting. No grab-bag changes. The PR description names the goal and surfaces any non-obvious decisions.
 
+**Branches:** Phase / feature branches are merged into `main` with `--no-ff` so the merge commit captures the boundary, and are **kept around** afterward — do not run `git branch -d`. The branch name is part of the project's history.
+
 **Comments:** Default to none. Add one only when the *why* would be non-obvious to a cold reader — a hidden constraint, a security invariant, a workaround for a specific bug. Don't restate what well-named code already says. Don't reference the current task or fix in a comment; that belongs in the commit message.
 
 **Anti-patterns to avoid:**
