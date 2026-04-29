@@ -12,16 +12,32 @@
 
 ## Phase 0 — Repo prep
 
-**Goal:** Directory layout and ignore rules in place so secrets never get committed.
+**Goal:** Directory layout, ignore rules, README, and license in place. Anyone landing on the repo's GitHub page sees a polished first impression before there's a single line of application code.
 
 **Steps:**
 
 1. Create directories: `app/(game)/`, `app/(admin)/`, `lib/supabase/`, `supabase/migrations/`, `tests/integration/`, `public/data/` (Cliopatria lives here later).
 2. Add `.gitignore` covering `node_modules/`, `.next/`, `.env*` (allow `.env.example`), `coverage/`, `playwright-report/`, `test-results/`, `supabase/.temp/`, `*.tsbuildinfo`.
 3. Add `.env.example` listing the variables from architecture §Environment & Configuration with placeholder values.
-4. Commit: `chore: scaffold repo structure`
+4. Add `LICENSE` — MIT, in the user's name. The Cliopatria dataset itself is CC-BY (separate licensing concern, addressed in step 5).
+5. Add `README.md`:
+   - One-line tagline + one-paragraph elevator pitch.
+   - **Live demo** section with a placeholder link (will become the Firebase App Hosting URL once Phase 4 lands — leave a `TODO: live demo url` so it's obvious what's missing).
+   - **Screenshots** section with a placeholder note (real screenshots get added once Phase 5 lands and there's something to capture).
+   - **Setup** section: prerequisites (Node version, Supabase CLI), env-var checklist pointing at `.env.example`, the dev/test/build commands. Will be a stub until Phase 1 fills it in — note that explicitly so a reviewer doesn't read it as broken.
+   - **Architecture** section linking to [chrono-carta-architecture.md](chrono-carta-architecture.md) with a one-sentence summary of why the doc exists (high-level design, security model, data model — read before contributing).
+   - **Tech stack** section — Next.js App Router, Supabase, Firebase App Hosting, Jest/Playwright. Brief and factual.
+   - **Attribution** section crediting the Seshat Cliopatria dataset under CC-BY 4.0, with a link to the dataset and the Nature Scientific Data 2025 paper. Required by the dataset license per architecture §GeoJSON Data Source.
+   - **License** section pointing at `LICENSE` for the application code, distinguished from the Cliopatria attribution above.
+6. Commit: `chore: scaffold repo with readme, license, and gitignore`
 
-**Verification:** `git status` clean; the directory tree matches architecture §Project Structure.
+**Verification:** `git status` clean; directory tree matches architecture §Project Structure; the GitHub repo page renders the README cleanly with no broken links other than the explicitly-marked TODOs.
+
+**Cliopatria attribution checklist (forward-looking):** The CC-BY requirement isn't satisfied by the README alone — the running app must also surface attribution. Track these placements as future phases land:
+- README — done in this phase.
+- App footer (visible on every page) — added in Phase 5 alongside the first real layout.
+- Reveal screen — added when the gameplay reveal lands in a later plan, since the architecture calls out "All maps in ChronoCarta carry an attribution to the Seshat Cliopatria project."
+- Credits page — added when the credits view lands.
 
 ---
 

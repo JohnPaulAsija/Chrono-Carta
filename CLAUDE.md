@@ -70,6 +70,28 @@ The full ~50–100 MB Cliopatria GeoJSON is a static asset on the server. It's l
 
 Below ~768px, render a "best on a larger screen" message rather than a degraded gameplay experience. The start screen, credits, and other non-gameplay views stay accessible at any size.
 
+## Code Quality & Conventions
+
+**TypeScript:** `strict: true`, `noUncheckedIndexedAccess: true`. No `any` without a one-line justification.
+
+**Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`). Atomic — one logical change per commit. The message answers *why*; the diff answers *what*.
+
+**PRs:** One coherent story per PR, readable top-to-bottom in one sitting. No grab-bag changes. The PR description names the goal and surfaces any non-obvious decisions.
+
+**Comments:** Default to none. Add one only when the *why* would be non-obvious to a cold reader — a hidden constraint, a security invariant, a workaround for a specific bug. Don't restate what well-named code already says. Don't reference the current task or fix in a comment; that belongs in the commit message.
+
+**Anti-patterns to avoid:**
+
+- Defensive code for cases that can't happen — validating internal callers, `try/catch` around code that doesn't throw.
+- Stubs, half-finished branches, commented-out code, or orphan TODOs left on `main`.
+- Generic error handling that swallows context (`"Something went wrong"` with no detail logged).
+- Premature abstractions — three similar lines is better than a too-early helper.
+- Re-exporting types or aliasing imports for backward compatibility with code that doesn't exist yet.
+
+**Tests as specs:** Test names describe behavior in plain English. Table-driven where it clarifies the matrix being covered. A reader should be able to learn what a function does by reading its tests.
+
+**Architecture doc as living source:** [chrono-carta-architecture.md](chrono-carta-architecture.md) is the source of truth and stays accurate as the code evolves. Drift between the doc and the code is treated as a bug — fix the doc in the same PR as the change.
+
 ## Environment Variables
 
 | Variable | Where | Purpose |
