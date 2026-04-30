@@ -25,7 +25,7 @@ jobs:
       # We point the build at the TEST branch — same Supabase project,
       # safe values to expose, and means CI never depends on production
       # values.
-      SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SECRET_KEY }}
       ROUNDS_PER_GAME: "10"
@@ -38,6 +38,12 @@ jobs:
       SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
       SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
       SUPABASE_TEST_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SECRET_KEY }}
+
+      # Passwords for the two seeded auth users on the TEST branch.
+      # The integration suite signs in as them via signInAs(role) to
+      # exercise RLS as real curator / admin.
+      TEST_CURATOR_PASSWORD: ${{ secrets.TEST_CURATOR_PASSWORD }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4

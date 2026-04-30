@@ -362,7 +362,7 @@ Supabase API keys follow the modern naming convention: a `sb_publishable_*` key 
 
 | Variable | Context | Purpose |
 |---|---|---|
-| `SUPABASE_URL` | Server & client | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_URL` | Server & client | Supabase project URL. The `NEXT_PUBLIC_` prefix is required so Next.js inlines it into client bundles for the browser auth client; server code reads the same variable. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client | Publishable key (`sb_publishable_*`). Safe for the browser; RLS enforces access. Prefixed with `NEXT_PUBLIC_` so Next.js exposes it to client components. |
 | `SUPABASE_SECRET_KEY` | Server only | Secret key (`sb_secret_*`). Full database access, bypasses RLS. Used exclusively in `getGameClient()` for gameplay reads. **Must never be exposed to the client.** Stored in Firebase App Hosting's Cloud Secret Manager integration. |
 | `GAME_STATE_SECRET` | Server only | Secret used to sign and verify game state JWTs. Stored alongside the Supabase secret key in Cloud Secret Manager. |
@@ -413,13 +413,13 @@ Render individual components in a simulated DOM to verify interactive behavior w
 - **Color-blind-safe feedback:** Correct result renders a checkmark icon and "Correct!" text. Wrong result renders an X icon and "Wrong" text. Both are present regardless of color styling.
 - **Focus visibility:** Interactive elements have the custom focus ring class applied.
 
-### Integration Tests (Dedicated Supabase Test Project + Jest)
+### Integration Tests (Supabase TEST branch + Jest)
 
-RLS policies tested with actual database calls against a dedicated Supabase test project — a separate project from production within the same Pro subscription organization. The test project has the same schema, migrations, and RLS policies applied. This provides a fully isolated environment: test data never touches production, and tests are not affected by real curator activity.
+RLS policies tested with actual database calls against the `TEST` branch of the main Supabase project. The branch carries the same migrations (via `rebase_branch`) and an isolated database, so test data never touches dev / production data and tests are not affected by real curator activity.
 
-The test project's credentials (`SUPABASE_TEST_URL`, `SUPABASE_TEST_SERVICE_ROLE_KEY`, `SUPABASE_TEST_ANON_KEY`) are stored as CI secrets and used by the test suite. The same migration files applied to production are applied to the test project, ensuring parity.
+The TEST branch's credentials (`SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_KEY`, `SUPABASE_TEST_SECRET_KEY`) plus the seeded auth users' passwords (`TEST_CURATOR_PASSWORD`, `TEST_ADMIN_PASSWORD`) are stored as CI secrets and used by the test suite. The same migrations promoted to `main` are first verified against `TEST`, ensuring parity.
 
-Test setup seeds the test project with a curator user, an admin user, and a small set of test maps. Teardown cleans up all test data after each run. If cleanup fails, the test project can be reset without consequences since it holds no real data.
+Test setup signs in as the seeded curator and admin via `signInAs(role)`, then exercises RLS through their user-JWT clients. Map fixtures are inserted with a `RLS_TEST_` title prefix so `cleanupTestMaps()` can delete only test data via the service-role client; real curator data carries no such prefix and is never touched.
 
 Key test cases:
 
@@ -532,7 +532,9 @@ The two-client pattern determines which policies apply in each context:
 
 **`users` table:**
 
-- **Authenticated users:** `SELECT` on their own row. No `INSERT` or `UPDATE` (account management is admin-only via the Supabase dashboard).
+- **Authenticated curators:** `SELECT` on their own row only.
+- **Admins:** `SELECT` on all rows. The admin panel needs cross-user reads to display curator names alongside their content (e.g. "Created by Ms. Rivera" on a map list filtered by author). Identified by the same `private.is_admin()` helper used by the maps policies.
+- **No `INSERT` or `UPDATE`** for any role — account management still happens through the Supabase dashboard / service-role client, never through the app.
 
 ### Policies for anonymous access
 

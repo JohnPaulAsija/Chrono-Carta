@@ -17,6 +17,7 @@ These are decisions made during execution that diverge from the original plan. T
 - **Live infra is managed via the Supabase MCP** (apply_migration, execute_sql, etc.) rather than the CLI's `db push` against a local Docker stack. The CLI is still installed for migration authoring and link operations. `supabase init`'s `config.toml` was deleted because we never run a local Docker stack.
 - **Modern Supabase key naming** (`sb_publishable_*` / `sb_secret_*`) is used throughout — env vars are `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. The legacy anon JWT / service-role JWT format is not used. Architecture §Environment & Configuration is the source of truth.
 - **App Hosting region is `us-east4`**, not the optimal `us-west1` for Supabase (`us-west-2`). This is a pre-launch suboptimality — recreate the backend in `us-west1` before public launch to cut Server-Action latency by 50–75 ms.
+- **`SUPABASE_URL` renamed to `NEXT_PUBLIC_SUPABASE_URL`** during Phase 3. The architecture's table marked the URL as "Server & client" but the variable name lacked the `NEXT_PUBLIC_` prefix Next.js requires for client visibility. The browser auth client needs the URL in client bundles, so we renamed; server code reads the same variable. Architecture doc updated.
 
 ---
 
@@ -197,13 +198,16 @@ This task is small, fast, and proves the unit test runner is wired correctly —
 
 **Steps:**
 
-1. Implement `app/(admin)/login/page.tsx` using the browser anon client for `signInWithPassword`.
+1. Implement `app/(admin)/login/page.tsx` using the browser publishable-key client for `signInWithPassword`.
 2. Add `middleware.ts` protecting `/admin/*` — redirect to `/admin/login` if no session.
 3. Implement `app/(admin)/admin/page.tsx` as a Server Component that reads the session, calls `getCuratorClient(session)`, queries `maps` for the current user (RLS does the filtering), and renders the empty-state.
-4. Add a Playwright E2E test logging in as the seeded curator and asserting the empty-state renders. Add Playwright as a CI job per architecture §CI Pipeline §5.
-5. Commit + PR + merge.
+4. **Wire up `requireUserProfile` from `lib/auth/profile.ts`** as the Server Component's first call after the session check (or in `middleware.ts`). The helper was written in Phase 3 with only test callers — Phase 5 is its first production use. Two things to validate while wiring:
+   - Whether the throw-on-missing pattern is the right ergonomics for Server Components, or whether the helper should return a discriminated `{ ok, profile } | { error, kind }` instead. Refactor the helper if Server Components find the throw awkward.
+   - Whether `requireUserProfile` belongs in middleware (cheap session check) or in each Server Action (closer to the data access). Architecture doesn't dictate; pick during this phase.
+5. Add a Playwright E2E test logging in as the seeded curator and asserting the empty-state renders. Add Playwright as a CI job per architecture §CI Pipeline §5.
+6. Commit + PR + merge.
 
-**Verification:** Logged-out visitor to `/admin` is redirected. Logged-in curator sees the empty management view. Playwright passes locally and in CI. Firebase preview URL serves the same flow.
+**Verification:** Logged-out visitor to `/admin` is redirected. Logged-in curator sees the empty management view. Logged-in curator with no `public.users` row gets the "user profile not found" path (re-validates the Phase 3 helper test in real Server Action context). Playwright passes locally and in CI. Firebase preview URL serves the same flow.
 
 ---
 

@@ -98,7 +98,7 @@ Below ~768px, render a "best on a larger screen" message rather than a degraded 
 
 | Variable | Where | Purpose |
 |---|---|---|
-| `SUPABASE_URL` | server + client | Project URL |
+| `NEXT_PUBLIC_SUPABASE_URL` | server + client | Project URL. `NEXT_PUBLIC_` so the browser auth client can read it. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client | `sb_publishable_*` key, browser-side auth only |
 | `SUPABASE_SECRET_KEY` | server only | `sb_secret_*` key — `getGameClient()`, bypasses RLS, never expose |
 | `GAME_STATE_SECRET` | server only | Signs/verifies game state JWTs |
