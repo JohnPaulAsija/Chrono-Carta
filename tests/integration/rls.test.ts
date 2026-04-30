@@ -1,4 +1,5 @@
 import {
+  adminBypassClient,
   anonClient,
   cleanupTestMaps,
   mapFixture,
@@ -71,5 +72,46 @@ describe("RLS — curator on maps", () => {
 
     expect(error).toBeNull();
     expect(data?.title).toBe(newTitle);
+  });
+
+  it("CANNOT update a map owned by someone else", async () => {
+    // Seed a map owned by the admin user via service-role bypass.
+    const { userId: adminId } = await signInAs("admin");
+    const seeded = await seedTestMap(adminId, "admin-owned-for-curator-attack");
+
+    // Capture the original title via service-role read so we can prove
+    // the eventual write was a no-op.
+    const before = await adminBypassClient()
+      .from("maps")
+      .select("title")
+      .eq("id", seeded.id)
+      .single();
+    expect(before.error).toBeNull();
+    const originalTitle = before.data?.title;
+
+    // The curator (signed in separately) attempts to overwrite the
+    // admin's map.
+    const { client: curatorClient } = await signInAs("curator");
+    const evilTitle = `${TEST_MAP_PREFIX}curator-stole-it_${Date.now()}`;
+    const { data, error } = await curatorClient
+      .from("maps")
+      .update({ title: evilTitle })
+      .eq("id", seeded.id)
+      .select();
+
+    // RLS filters the row out of the curator's USING clause; PostgREST
+    // returns success with zero rows affected rather than an explicit
+    // permission denial.
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+
+    // Hard proof the row is unchanged: re-read via service-role.
+    const after = await adminBypassClient()
+      .from("maps")
+      .select("title")
+      .eq("id", seeded.id)
+      .single();
+    expect(after.error).toBeNull();
+    expect(after.data?.title).toBe(originalTitle);
   });
 });
