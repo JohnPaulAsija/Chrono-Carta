@@ -421,6 +421,8 @@ The TEST branch's credentials (`SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_K
 
 Test setup signs in as the seeded curator and admin via `signInAs(role)`, then exercises RLS through their user-JWT clients. Map fixtures are inserted with a `RLS_TEST_` title prefix so `cleanupTestMaps()` can delete only test data via the service-role client; real curator data carries no such prefix and is never touched.
 
+Production code reaches Supabase through `getServerSupabase()`, which reads the session from cookies via `@supabase/ssr`. Tests skip the cookie machinery — Node has no cookie context — and instead inject `access_token` directly into the `Authorization` header (see `createAuthedTestClient` in `tests/integration/setup.ts`). The wire-level request to PostgREST is byte-for-byte equivalent in both cases, so RLS evaluation is identical. The cookie-handling path is exercised end-to-end by Playwright; integration tests are deliberately scoped narrower (RLS policy behavior).
+
 Key test cases:
 
 - A curator can INSERT a map with their own `created_by`.
