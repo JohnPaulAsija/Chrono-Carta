@@ -53,7 +53,15 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Cache Cliopatria dataset
+        uses: actions/cache@v4
+        with:
+          path: public/data/cliopatria-0.0.1/cliopatria.geojson
+          key: cliopatria-v0.0.1
+
       - run: npm ci
+
+      - run: npm run data:fetch
 
       - run: npm run lint
 

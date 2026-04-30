@@ -10,7 +10,8 @@
     "test": "jest --passWithNoTests",
     "test:unit": "jest --selectProjects unit --passWithNoTests",
     "test:integration": "jest --selectProjects integration --passWithNoTests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data:fetch": "node scripts/fetch-cliopatria.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
