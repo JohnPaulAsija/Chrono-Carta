@@ -30,9 +30,9 @@ These are the constraints most likely to be silently broken if you don't know ab
 There are **two** server-side Supabase clients with very different security profiles, and they must not cross route groups:
 
 - `getGameClient()` — uses `SUPABASE_SECRET_KEY` (the modern `sb_secret_*` key, Postgres `service_role`), **bypasses RLS**. Used **only** in `app/(game)/actions.ts`. Access control for gameplay is the signed JWT game state token, not RLS.
-- `getCuratorClient(session)` — built from the curator's JWT, **respects RLS**. Used **only** in `app/(admin)/actions.ts`. The required `session` parameter is a deliberate guardrail: you can't construct one without an authenticated session.
+- `getServerSupabase()` — built from `@supabase/ssr`'s `createServerClient` reading the session from cookies set by Supabase Auth. **Respects RLS.** Used in `app/(admin)/...` middleware, Server Components, and Server Actions. The route-group boundary is the security guarantee — the secret-key client never lives under `app/(admin)`, so the admin path always reaches Supabase via this RLS-respecting helper.
 
-A cross-import between these route groups (e.g., `getGameClient` imported into the admin actions, or vice versa) is an immediate red flag. If the secret key leaks into the admin path, RLS is silently bypassed and curators can edit each other's maps. If the curator client is used in gameplay, anonymous players hit permission errors and the game breaks.
+A cross-import between these route groups (e.g., `getGameClient` imported into the admin actions, or vice versa) is an immediate red flag. If the secret key leaks into the admin path, RLS is silently bypassed and curators can edit each other's maps. If the user-JWT client is used in gameplay, anonymous players hit permission errors and the game breaks.
 
 The browser-side publishable-key client is for **Supabase Auth session management only** — never for data reads or writes.
 
@@ -57,7 +57,7 @@ The JWT lives in React state for the duration of the session — **not** localSt
 ```
 app/
 ├── (game)/         # uses getGameClient() — anon players, secret-key reads bypass RLS
-└── (admin)/        # uses getCuratorClient(session) — authenticated curators, RLS-enforced
+└── (admin)/        # uses getServerSupabase() — authenticated users via cookies, RLS-enforced
 ```
 
 `lib/supabase/` holds the three client factories. `lib/cliopatria.ts` is the dataset loader/filter. `lib/game-state.ts` holds `signToken`, `verifyToken`, `formatAnswer`, and `assembleOptions`. `lib/map-colors.ts` holds `assignColors` (graph-coloring with `MemberOf`-based color families).
