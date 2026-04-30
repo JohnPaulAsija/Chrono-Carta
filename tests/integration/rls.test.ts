@@ -4,6 +4,7 @@ import {
   mapFixture,
   seedTestMap,
   signInAs,
+  TEST_MAP_PREFIX,
 } from "./setup";
 
 describe("RLS — anon access", () => {
@@ -54,5 +55,21 @@ describe("RLS — curator on maps", () => {
     expect(error).toBeNull();
     expect(data?.id).toBe(seeded.id);
     expect(data?.created_by).toBe(userId);
+  });
+
+  it("can update their own maps", async () => {
+    const { client, userId } = await signInAs("curator");
+    const seeded = await seedTestMap(userId, "curator-update");
+    const newTitle = `${TEST_MAP_PREFIX}curator-updated_${Date.now()}`;
+
+    const { data, error } = await client
+      .from("maps")
+      .update({ title: newTitle })
+      .eq("id", seeded.id)
+      .select("id, title")
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.title).toBe(newTitle);
   });
 });
