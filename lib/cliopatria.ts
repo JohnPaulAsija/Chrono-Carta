@@ -35,6 +35,15 @@ export async function loadCliopatria(
   return parsed;
 }
 
+export function filterByYear(
+  features: CliopatriaFeature[],
+  year: number,
+): CliopatriaFeature[] {
+  return features.filter(
+    (f) => f.properties.FromYear <= year && year <= f.properties.ToYear,
+  );
+}
+
 // Test-only helper. Resets the module-level cache so each test starts
 // from a clean state.
 export function _resetCliopatriaCache(): void {
