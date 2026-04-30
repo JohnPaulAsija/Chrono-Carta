@@ -169,3 +169,29 @@ describe("RLS — admin on maps", () => {
     expect(data?.title).toBe(newTitle);
   });
 });
+
+describe("RLS — users table", () => {
+  it("authenticated user gets only their own row when selecting *", async () => {
+    const { client, userId } = await signInAs("curator");
+
+    // Unfiltered select; users_select_own should narrow to one row.
+    const { data, error } = await client.from("users").select("*");
+
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data?.[0]?.id).toBe(userId);
+  });
+
+  it("authenticated user cannot read another user's row even when filtered", async () => {
+    const { userId: adminId } = await signInAs("admin");
+    const { client: curatorClient } = await signInAs("curator");
+
+    const { data, error } = await curatorClient
+      .from("users")
+      .select("*")
+      .eq("id", adminId);
+
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
+});
