@@ -1,0 +1,88 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      },
+      "properties": {
+        "Name": "Atlantis",
+        "FromYear": 1700,
+        "ToYear": 1900,
+        "Area": 12345,
+        "Wikipedia": "https://en.wikipedia.org/wiki/Atlantis",
+        "SeshatID": "atlantis-1",
+        "Type": "Polity",
+        "Components": ["Atlantis-A", "Atlantis-B"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]]]
+      },
+      "properties": {
+        "Name": "Boundaria",
+        "FromYear": 1815,
+        "ToYear": 1850,
+        "Area": 6789,
+        "Wikipedia": "https://en.wikipedia.org/wiki/Boundaria",
+        "SeshatID": "boundaria-1",
+        "Type": "Polity"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[4, 0], [5, 0], [5, 1], [4, 1], [4, 0]]]
+      },
+      "properties": {
+        "Name": "Cessation",
+        "FromYear": 1750,
+        "ToYear": 1815,
+        "Area": 4321,
+        "Wikipedia": "https://en.wikipedia.org/wiki/Cessation",
+        "SeshatID": "cessation-1",
+        "Type": "Polity"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[6, 0], [7, 0], [7, 1], [6, 1], [6, 0]]]
+      },
+      "properties": {
+        "Name": "Distantia",
+        "FromYear": 1500,
+        "ToYear": 1600,
+        "Area": 999,
+        "Wikipedia": "https://en.wikipedia.org/wiki/Distantia",
+        "SeshatID": "distantia-1",
+        "Type": "Polity"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[8, 0], [9, 0], [9, 1], [8, 1], [8, 0]]]
+      },
+      "properties": {
+        "Name": "Empyrea",
+        "FromYear": 1700,
+        "ToYear": 1900,
+        "MemberOf": "Hapsburg Sphere",
+        "Area": 22222,
+        "Wikipedia": "https://en.wikipedia.org/wiki/Empyrea",
+        "SeshatID": "empyrea-1",
+        "Type": "Polity",
+        "Components": ["Empyrea-North", "Empyrea-South"]
+      }
+    }
+  ]
+}
