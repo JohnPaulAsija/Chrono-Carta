@@ -38,21 +38,21 @@ The order below is "build the layers from the bottom up so each layer compiles a
 
 **Why first.** Every later phase that touches map content depends on the dataset being readable. There's no UI here; pure logic that's fully unit-testable without a browser.
 
-### Phase 7 — Color assignment ([detail](2026-04-30-phase-7-color-assignment.md))
-
-`lib/map-colors.ts` exposing `assignColors(features)`. Computes polygon adjacency, applies graph coloring with a 8–12 color palette, derives color families from the `MemberOf` relation so composite entities (e.g. states inside the Holy Roman Empire) share a hue.
-
-**Why second.** Logically continues Phase 6 — Cliopatria filtering produces features, color assignment annotates them. Splitting the two means Phase 6 lands a clean data-loading concern and Phase 7 lands a self-contained algorithm. Together they form the pre-storage pipeline that map creation runs at submit time.
-
-### Phase 8 — Map viewer component ([detail](2026-04-30-phase-8-map-viewer-component.md))
+### Phase 7 — Map viewer component ([detail](2026-04-30-phase-7-map-viewer-component.md))
 
 `react-simple-maps` integration. `app/(game)/play/MapViewer.tsx` (Client Component) renders a `geojson_data` blob with permanent labels above a size threshold, hover tooltips, and a legend panel of unlabeled entities. Pan/zoom controls. Highlighting state shared between map and legend.
 
-**Why third.** Both Phase 9 (creation preview) and Phase 12 (gameplay) instantiate this component. Building it once means both downstream features are mostly composition work. Built before any feature consumes it so the API can be designed cleanly rather than retrofitted.
+**Why second.** Both Phase 9 (creation preview) and Phase 12 (gameplay) instantiate this component, so building it before either consumer means downstream work is mostly composition. Building it before Phase 8's coloring algorithm also gives that algorithm a render to validate against — adjacent same-color regions show up immediately in a map view, which test assertions alone won't catch as cheaply.
+
+### Phase 8 — Color assignment ([detail](2026-04-30-phase-8-color-assignment.md))
+
+`lib/map-colors.ts` exposing `assignColors(features)`. Computes polygon adjacency, applies graph coloring with a 8–12 color palette, derives color families from the `MemberOf` relation so composite entities (e.g. states inside the Holy Roman Empire) share a hue.
+
+**Why third.** With the Phase 7 viewer in place, the graph-coloring output is visually verifiable as the algorithm takes shape — render a colored fixture, eyeball it, fix the obvious mistakes. Splitting from Phase 6 keeps the data-loading concern clean and lets this phase land a self-contained algorithm that the pre-storage pipeline plugs into at map creation time.
 
 ### Phase 9 — Map creation flow ([detail](2026-04-30-phase-9-map-creation-flow.md))
 
-`app/(admin)/admin/create/page.tsx` and an admin Server Action `createMap`. Full curator UI: year + AD/BC toggle → preview → viewport framing → metadata (title, precision, three wrong answers each with AD/BC, reveal text, optional difficulty + tags). Server-side validation, calls into Phase 6 + 7 to produce the row, runs `formatAnswer` to fill `formatted_correct` / `formatted_wrong`.
+`app/(admin)/admin/create/page.tsx` and an admin Server Action `createMap`. Full curator UI: year + AD/BC toggle → preview → viewport framing → metadata (title, precision, three wrong answers each with AD/BC, reveal text, optional difficulty + tags). Server-side validation, calls into Phase 6 + 8 to produce the row, runs `formatAnswer` to fill `formatted_correct` / `formatted_wrong`.
 
 **Why fourth.** First user-facing consumer of Phases 6, 7, 8. After this phase, real maps exist in the database — every later phase has data to work against.
 
@@ -70,7 +70,7 @@ Replaces the empty-state in `app/(admin)/admin/page.tsx` with a real list view; 
 
 ### Phase 12 — Gameplay UI ([detail](2026-04-30-phase-12-gameplay-ui.md))
 
-`app/(game)/play/page.tsx` (Server Component shell), `GameBoard.tsx`, the reveal screen, the end screen. Composes `MapViewer` from Phase 8, calls Server Actions from Phase 11, renders multiple-choice options, transitions through rounds, shows the per-round summary.
+`app/(game)/play/page.tsx` (Server Component shell), `GameBoard.tsx`, the reveal screen, the end screen. Composes `MapViewer` from Phase 7, calls Server Actions from Phase 11, renders multiple-choice options, transitions through rounds, shows the per-round summary.
 
 **Why seventh.** First consumer of the gameplay backend. After this phase, the full play loop works: start → guess → reveal → end. Gating the UI on the backend means we never write client code that proxies for missing server code.
 
@@ -90,9 +90,9 @@ Create the production Supabase project (separate from main/TEST). Apply migratio
 
 ## Sequencing notes
 
-**Truly serial.** 6 → 7 → 9 must be sequential (creation depends on both), 8 must precede 9 and 12 (viewer is consumed by both), 11 must precede 12.
+**Truly serial.** 6 → 8 → 9 must be sequential (creation depends on both), 7 must precede 9 and 12 (viewer is consumed by both), 11 must precede 12.
 
-**Could parallelise.** Phases 7 and 8 don't depend on each other — color assignment is pure server logic, the map viewer is pure client rendering with placeholder fixtures. If two contributors work in parallel, one takes 7, the other takes 8, both merge before starting 9. Solo, they're sequential.
+**Could parallelise.** Phases 7 and 8 don't depend on each other — the map viewer is pure client rendering with placeholder fixtures, color assignment is pure server logic. If two contributors work in parallel, one takes 7, the other takes 8, both merge before starting 9. Solo, they're sequential — and 7 first lets you validate 8's output visually, which is why this plan orders them that way.
 
 Phase 10 (management) and Phase 11 (gameplay backend) don't share files; they could parallelise too, with the caveat that Phase 11 will land changes to `lib/game-state.ts` that Phase 12 reads.
 

@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: superpowers:executing-plans. TDD per superpowers:test-driven-development for every Server Action and form-validation function.
 
-**Goal:** Curator-facing map creation: enter a year → see a live preview → frame the viewport → fill in metadata → submit. The Server Action runs the full Phase 6 + Phase 7 pipeline and writes a complete `maps` row.
+**Goal:** Curator-facing map creation: enter a year → see a live preview → frame the viewport → fill in metadata → submit. The Server Action runs the full Phase 6 + Phase 8 pipeline and writes a complete `maps` row.
 
 **Architecture:** Per architecture §Map Creation Form and §Map Creation Flow. Three-step UX, one form, two Server Actions: `previewMap(year)` returns colored stripped GeoJSON without writing anything; `createMap(formData)` validates, runs the same filter+strip+color pipeline, runs `formatAnswer`, writes the row. Form validation runs both client-side (UX) and server-side (security).
 
-**Tech Stack:** Next.js Server Actions, React form state, Tailwind, `MapViewer` from Phase 8, integration tests against the TEST branch.
+**Tech Stack:** Next.js Server Actions, React form state, Tailwind, `MapViewer` from Phase 7, integration tests against the TEST branch.
 
 ---
 
@@ -171,7 +171,7 @@ git commit -m "feat(admin): createMap server action runs full storage pipeline"
 
 Layout follows the architecture's three steps:
 1. Year input + AD/BC toggle + "Preview" button → fires `previewMap(year)`.
-2. After preview loads, render `MapViewer` (Phase 8) inside the form. Pan/zoom captures `center_lat`, `center_lng`, `zoom_level`.
+2. After preview loads, render `MapViewer` (Phase 7) inside the form. Pan/zoom captures `center_lat`, `center_lng`, `zoom_level`.
 3. Metadata fields: title, precision dropdown, three wrong-answer rows (each with AD/BC toggle), reveal text textarea, optional difficulty + tags.
 
 Validation on the client mirrors `validateMapForm` so errors show inline before round-tripping. Submit button disabled until validation passes.

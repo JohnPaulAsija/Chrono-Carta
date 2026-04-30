@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: superpowers:executing-plans. Component tests use superpowers:test-driven-development with @testing-library/react.
 
-**Goal:** Compose Phases 8 (`MapViewer`) and 11 (gameplay Server Actions) into a working play loop: start → multiple-choice guess → reveal → next or end. After this phase, a player can complete a full game in production.
+**Goal:** Compose Phases 7 (`MapViewer`) and 11 (gameplay Server Actions) into a working play loop: start → multiple-choice guess → reveal → next or end. After this phase, a player can complete a full game in production.
 
 **Architecture:** Per architecture §Key Views (game / reveal / end). `app/(game)/play/page.tsx` is a Server Component that calls `startGame()` and renders the initial state into `GameBoard.tsx` (Client Component). `GameBoard` owns the running game state — current round's data, score, the JWT — and orchestrates `submitGuess` calls and screen transitions.
 
-**Tech Stack:** Same as Phase 8/11 plus error-state UI patterns from architecture §Error Handling.
+**Tech Stack:** Same as Phase 7/11 plus error-state UI patterns from architecture §Error Handling.
 
 ---
 

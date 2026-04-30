@@ -1,4 +1,4 @@
-# Phase 8 — Map Viewer Component Implementation Plan
+# Phase 7 — Map Viewer Component Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: superpowers:executing-plans. Component tests follow superpowers:test-driven-development with @testing-library/react.
 
@@ -217,6 +217,6 @@ git commit -m "feat(map-viewer): responsive desktop/tablet layout"
 
 ```
 git checkout main
-git merge --no-ff phase/8-map-viewer-component -m "merge: phase 8 — map viewer with legend, labels, controls"
+git merge --no-ff phase/7-map-viewer-component -m "merge: phase 7 — map viewer with legend, labels, controls"
 git push origin main
 ```

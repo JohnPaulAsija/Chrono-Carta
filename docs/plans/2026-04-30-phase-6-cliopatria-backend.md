@@ -95,7 +95,7 @@ Five features minimum, with year ranges chosen so tests exercise:
 - a feature whose `ToYear` equals the queried year (boundary inclusive)
 - a feature whose `FromYear` equals the queried year (boundary inclusive)
 - a feature that's strictly outside (exclude)
-- a feature with `MemberOf` set (for color-family work in Phase 7 — out of scope here but the fixture covers it now)
+- a feature with `MemberOf` set (for color-family work in Phase 8 — out of scope here but the fixture covers it now)
 
 Each feature carries `Name`, `geometry` (any valid Polygon — coordinates can be made-up), `FromYear`, `ToYear`, and optional `MemberOf`, `Wikipedia`, `SeshatID`, `Type`, `Components`, `Area` so the strip step has things to remove.
 

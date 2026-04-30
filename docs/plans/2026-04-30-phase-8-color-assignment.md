@@ -1,4 +1,4 @@
-# Phase 7 — Color Assignment Implementation Plan
+# Phase 8 — Color Assignment Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans. TDD discipline per superpowers:test-driven-development for each task below.
 
@@ -14,7 +14,7 @@
 
 **Files:** `package.json`, `package-lock.json`.
 
-**Step 1:** `npm i @turf/turf`. Adds runtime dep — used both by `lib/map-colors.ts` (Phase 7) and potentially `lib/cliopatria.ts` future filtering.
+**Step 1:** `npm i @turf/turf`. Adds runtime dep — used both by `lib/map-colors.ts` (Phase 8) and potentially `lib/cliopatria.ts` future filtering.
 
 **Step 2:** Commit.
 
@@ -305,6 +305,6 @@ git commit -m "test(map-colors): real-cliopatria smoke test for adjacency-correc
 
 ```
 git checkout main
-git merge --no-ff phase/7-color-assignment -m "merge: phase 7 — graph-coloring with memberof families"
+git merge --no-ff phase/8-color-assignment -m "merge: phase 8 — graph-coloring with memberof families"
 git push origin main
 ```
