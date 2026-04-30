@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +26,13 @@ export default function LoginPage() {
       return;
     }
 
-    // router.refresh() pulls fresh Server Component output now that
-    // the auth cookies are set. router.push then navigates to the
-    // protected admin page; middleware will let it through.
-    router.refresh();
-    router.push("/admin");
+    // Full-page navigation rather than router.push: signInWithPassword
+    // writes the auth cookies into document.cookie, but a router.push
+    // can fire its RSC fetch before the proxy's createServerClient
+    // reads those new cookies, so proxy sees no session and bounces
+    // back to /admin/login. window.location forces a fresh top-level
+    // request with cookies attached, which the proxy lets through.
+    window.location.assign("/admin");
   }
 
   return (
