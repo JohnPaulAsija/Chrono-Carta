@@ -8,4 +8,12 @@ describe("RLS — anon access", () => {
     expect(error).toBeNull();
     expect(data).toEqual([]);
   });
+
+  it("returns zero rows from users", async () => {
+    const supabase = anonClient();
+    const { data, error } = await supabase.from("users").select("*");
+
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
 });
