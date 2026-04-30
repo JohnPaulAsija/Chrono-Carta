@@ -108,7 +108,7 @@ The dataset is licensed under Creative Commons Attribution and must be credited.
 
 ### Preprocessing and Storage
 
-The full Cliopatria file is stored as a static asset on the server (in the Next.js project, not in the database). At map creation time, a Server Action filters the dataset for the curator's specified year, extracts the matching entities, and produces a stripped GeoJSON FeatureCollection for storage in the `geojson_data` column.
+The full Cliopatria file is stored as a static asset under `public/data/cliopatria-0.0.1/cliopatria.geojson` — a version-pinned copy of the Seshat upstream `v0.0.1` release tag, sitting alongside the upstream `LICENSE.md`, `README.md`, and `notebooks/` reference scripts. The `.geojson` itself is gitignored (~180 MB unzipped); the surrounding metadata is committed. At map creation time, a Server Action filters the dataset for the curator's specified year, extracts the matching entities, and produces a stripped GeoJSON FeatureCollection for storage in the `geojson_data` column.
 
 **Fields preserved** in the stripped output: `Name` (entity label for display and legend), `geometry` (polygon coordinates for rendering), `MemberOf` (composite entity membership, used for color families — e.g., states within the Holy Roman Empire), and a pre-assigned `color` property (see Color Assignment below).
 
@@ -128,11 +128,11 @@ The adjacency computation is the most expensive step but only runs once per map 
 
 ### Cliopatria Loading Performance
 
-The full Cliopatria file (~50–100 MB) is loaded into server memory on first access and cached for subsequent requests. A curator experimenting with different years triggers multiple filter operations, but after the initial load each filter is a fast in-memory scan rather than a file read. The cache persists for the lifetime of the server process. On Cloud Run, cold starts will include the initial file load (~1–2 seconds); subsequent requests within the same instance are fast.
+The full Cliopatria file (~180 MB unzipped at v0.0.1) is loaded into server memory on first access and cached for subsequent requests. A curator experimenting with different years triggers multiple filter operations, but after the initial load each filter is a fast in-memory scan rather than a file read. The cache persists for the lifetime of the server process. On Cloud Run, cold starts will include the initial file load (a few seconds for parse + decode); subsequent requests within the same instance are fast.
 
 ### Data Size
 
-Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending on how many entities exist at that time. For 50 maps, total storage is 5–25 MB in the database. Negligible on Supabase Pro. The full Cliopatria file is approximately 50–100 MB uncompressed and lives on the server filesystem, not in the database.
+Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending on how many entities exist at that time. For 50 maps, total storage is 5–25 MB in the database. Negligible on Supabase Pro. The full Cliopatria file is approximately 180 MB uncompressed (49 MB as the upstream `.zip`) and lives on the server filesystem under `public/data/cliopatria-0.0.1/`, not in the database.
 
 ## Application Architecture
 

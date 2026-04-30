@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Cliopatria dataset — publicly readable so CI (and any environment that
+// doesn't have a Firebase auth context) can fetch it via a plain HTTPS
+// GET. The dataset is already public on Seshat's GitHub at the v0.0.1
+// tag; hosting it here is a CI-availability and version-pinning measure,
+// not a confidentiality boundary. Everything else stays default-deny.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /cliopatria.geojson {
+      allow read: if true;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

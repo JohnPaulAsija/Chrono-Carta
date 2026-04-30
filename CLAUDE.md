@@ -64,7 +64,7 @@ app/
 
 ### 6. Cliopatria dataset lives on the filesystem, not in Supabase
 
-The full ~50–100 MB Cliopatria GeoJSON is a static asset on the server. It's loaded into memory on first access and cached for the lifetime of the process. Cold starts pay a 1–2s load cost. Per-map filtered output (~100–500 KB) is what gets written to `maps.geojson_data` at creation time.
+The full ~180 MB Cliopatria GeoJSON (Seshat upstream `v0.0.1`, gitignored under `public/data/cliopatria-0.0.1/`) is a static asset on the server. It's loaded into memory on first access and cached for the lifetime of the process. Cold starts pay a few seconds of load cost. Per-map filtered output (~100–500 KB) is what gets written to `maps.geojson_data` at creation time.
 
 ### 7. Desktop/tablet only
 

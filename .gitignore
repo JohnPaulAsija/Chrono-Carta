@@ -43,6 +43,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Cliopatria dataset — too large to commit; pinned at v0.0.1 from
+# Seshat. LICENSE/README/notebooks under public/data/cliopatria-0.0.1/
+# are committed for attribution and reference; the .geojson itself is
+# fetched out of band (see lib/cliopatria.ts and CI bootstrap).
+public/data/cliopatria-0.0.1/cliopatria.geojson
+public/data/cliopatria-0.0.1/cliopatria.geojson.zip
+
 # Misc
 *.pem
 /.claude
