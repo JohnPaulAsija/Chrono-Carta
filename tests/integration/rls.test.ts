@@ -2,6 +2,7 @@ import {
   anonClient,
   cleanupTestMaps,
   mapFixture,
+  seedTestMap,
   signInAs,
 } from "./setup";
 
@@ -37,6 +38,21 @@ describe("RLS — curator on maps", () => {
       .single();
 
     expect(error).toBeNull();
+    expect(data?.created_by).toBe(userId);
+  });
+
+  it("can select their own maps", async () => {
+    const { client, userId } = await signInAs("curator");
+    const seeded = await seedTestMap(userId, "curator-select");
+
+    const { data, error } = await client
+      .from("maps")
+      .select("id, title, created_by")
+      .eq("id", seeded.id)
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.id).toBe(seeded.id);
     expect(data?.created_by).toBe(userId);
   });
 });
