@@ -532,7 +532,9 @@ The two-client pattern determines which policies apply in each context:
 
 **`users` table:**
 
-- **Authenticated users:** `SELECT` on their own row. No `INSERT` or `UPDATE` (account management is admin-only via the Supabase dashboard).
+- **Authenticated curators:** `SELECT` on their own row only.
+- **Admins:** `SELECT` on all rows. The admin panel needs cross-user reads to display curator names alongside their content (e.g. "Created by Ms. Rivera" on a map list filtered by author). Identified by the same `private.is_admin()` helper used by the maps policies.
+- **No `INSERT` or `UPDATE`** for any role — account management still happens through the Supabase dashboard / service-role client, never through the app.
 
 ### Policies for anonymous access
 

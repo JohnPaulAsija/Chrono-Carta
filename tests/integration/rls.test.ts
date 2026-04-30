@@ -173,10 +173,10 @@ describe("RLS — admin on maps", () => {
 });
 
 describe("RLS — users table", () => {
-  it("authenticated user gets only their own row when selecting *", async () => {
+  it("curator sees only their own row when selecting *", async () => {
     const { client, userId } = await signInAs("curator");
 
-    // Unfiltered select; users_select_own should narrow to one row.
+    // users_select_self_or_admin narrows curators to their own row.
     const { data, error } = await client.from("users").select("*");
 
     expect(error).toBeNull();
@@ -184,7 +184,7 @@ describe("RLS — users table", () => {
     expect(data?.[0]?.id).toBe(userId);
   });
 
-  it("authenticated user cannot read another user's row even when filtered", async () => {
+  it("curator cannot read another user's row even when filtered", async () => {
     const { userId: adminId } = await signInAs("admin");
     const { client: curatorClient } = await signInAs("curator");
 
@@ -195,6 +195,22 @@ describe("RLS — users table", () => {
 
     expect(error).toBeNull();
     expect(data).toEqual([]);
+  });
+
+  it("admin can read other users' rows", async () => {
+    const { userId: curatorId } = await signInAs("curator");
+    const { client: adminClient, userId: adminId } = await signInAs("admin");
+
+    // Admin gets at least their own row plus the curator's; the
+    // private.is_admin() branch of users_select_self_or_admin lifts
+    // the self-only filter.
+    const { data, error } = await adminClient
+      .from("users")
+      .select("id");
+
+    expect(error).toBeNull();
+    const ids = (data ?? []).map((row) => row.id);
+    expect(ids).toEqual(expect.arrayContaining([adminId, curatorId]));
   });
 });
 
