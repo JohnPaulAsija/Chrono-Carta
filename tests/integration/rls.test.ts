@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { requireUserProfile } from "@/lib/auth/profile";
 import {
   adminBypassClient,
   anonClient,
@@ -193,5 +195,25 @@ describe("RLS — users table", () => {
 
     expect(error).toBeNull();
     expect(data).toEqual([]);
+  });
+});
+
+describe("requireUserProfile (placeholder for Server Actions)", () => {
+  it("returns the profile when the public.users row exists", async () => {
+    const { client, userId } = await signInAs("curator");
+
+    const profile = await requireUserProfile(client, userId);
+
+    expect(profile.id).toBe(userId);
+    expect(profile.role_id).toBeGreaterThan(0);
+  });
+
+  it("throws when no public.users row matches the queried id", async () => {
+    const { client } = await signInAs("curator");
+    const orphanId = randomUUID();
+
+    await expect(requireUserProfile(client, orphanId)).rejects.toThrow(
+      /user profile not found/i,
+    );
   });
 });
