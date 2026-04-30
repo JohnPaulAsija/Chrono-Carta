@@ -42,6 +42,27 @@ Map content is sourced from **Seshat Cliopatria**, an open-source geospatial dat
 
 The dataset's license requires attribution wherever it is presented. ChronoCarta credits Seshat Cliopatria in the README, the app footer, the reveal screen, and the credits page.
 
+## Updating the Cliopatria dataset
+
+The dataset is pinned to a specific Seshat release (currently `v0.0.1`). The full file lives at `public/data/cliopatria-X.Y.Z/cliopatria.geojson` (gitignored, ~180 MB) and is mirrored in our Firebase Storage bucket so CI can fetch it without depending on Seshat's hosting.
+
+When Seshat ships a new release and we choose to upgrade:
+
+1. **Get the new file.** Download the new `cliopatria.geojson.zip` from the [Seshat Cliopatria releases](https://github.com/Seshat-Global-History-Databank/cliopatria/releases) page and unzip it.
+2. **Mirror to Firebase Storage.** Replace the object at `chrono-carta.firebasestorage.app/cliopatria.geojson` with the new file (Firebase Console → Storage → upload, overwrite). The public-read rule is path-scoped, so the URL stays the same.
+3. **Drop the new release into the repo.** Move the unzipped contents (`.geojson`, `LICENSE.md`, `README.md`, `notebooks/`) into a new folder `public/data/cliopatria-X.Y.Z/`. Delete the previous version's folder once the upgrade is committed.
+4. **Update version references.** Search-and-replace `cliopatria-0.0.1` (or whatever the previous version was) across:
+   - `lib/cliopatria.ts` — `DEFAULT_PATH`
+   - `scripts/fetch-cliopatria.mjs` — `DEST`
+   - `.github/workflows/ci.yml` — cache `key`
+   - `.gitignore` — gitignore entries for the version'd folder
+   - [chrono-carta-architecture.md](chrono-carta-architecture.md) and [CLAUDE.md](CLAUDE.md) — version mentions
+   - This section of the README
+5. **Verify.** Run `npm test` (the smoke tests parse the real file) and manually create a map in dev to confirm the schema didn't break the pre-storage pipeline.
+6. **Commit:** `chore(data): bump cliopatria to vX.Y.Z`.
+
+Schema changes between releases are possible. If a new release adds, removes, or renames fields, `lib/cliopatria.ts`'s `stripYearData` and the `MemberOf` color-family logic in `lib/map-colors.ts` may need adjustment.
+
 ## License
 
 The application code in this repository is released under the MIT License — see [LICENSE](LICENSE). The Cliopatria dataset is licensed separately under CC-BY 4.0 (see Attribution above).

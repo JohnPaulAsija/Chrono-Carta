@@ -4,35 +4,36 @@
 
 **Goal:** Stand up `lib/cliopatria.ts` so the rest of v1 can read polities at a year and ship a stripped, gameplay-safe GeoJSON snapshot. No UI in this phase — pure logic, fully unit-tested.
 
-**Architecture:** The Cliopatria GeoJSON file (50–100 MB) lives at `public/data/cliopatria.geojson` on the server filesystem. `loadCliopatria()` reads and parses it once on first call, caches in module-level memory for the process lifetime. `filterByYear(year)` returns features where `FromYear ≤ year ≤ ToYear`. `stripYearData(features)` removes the leak-prone fields per architecture §Preprocessing and Storage. The dataset is too large to commit; a download script fetches it during `npm install`.
+**Architecture:** The Cliopatria GeoJSON file (~180 MB, Seshat upstream `v0.0.1`) lives at `public/data/cliopatria-0.0.1/cliopatria.geojson` on the server filesystem. `loadCliopatria()` reads and parses it once on first call, caches in module-level memory for the process lifetime. `filterByYear(year)` returns features where `FromYear ≤ year ≤ ToYear`. `stripYearData(features)` removes the leak-prone fields per architecture §Preprocessing and Storage. The dataset is too large to commit; an explicit `npm run data:fetch` script populates it from our Firebase Storage mirror (no postinstall — local devs get an idempotent skip-if-present, CI runs it after restoring its cache).
 
 **Tech Stack:** TypeScript, Node `fs/promises`, no new runtime deps. Test fixtures live in `tests/fixtures/cliopatria-mini.geojson` so unit tests run in milliseconds without touching the real dataset.
 
 ---
 
-## Task 1: Wire the dataset into the install flow
+## Task 1: Fetch the Cliopatria dataset
+
+The dataset is gitignored at `public/data/cliopatria-0.0.1/cliopatria.geojson` and mirrored in Firebase Storage so CI can fetch it without depending on Seshat's hosting. Both local devs and CI need a way to populate the file. The Firebase Storage object is public-read for that one path (rule deployed in the prior `chore(data): pin cliopatria v0.0.1 + firebase-hosted ci copy` commit); fetching is a plain HTTPS GET — no auth, no zip-handling.
 
 **Files:**
-- Create: `scripts/download-cliopatria.mjs`
-- Modify: `package.json` (add `postinstall` + dependency-free download script)
-- Modify: `.gitignore` (ignore `public/data/cliopatria.geojson`)
-- Create: `public/data/.gitkeep` if not present
+- Create: `scripts/fetch-cliopatria.mjs`
+- Modify: `package.json` (add `data:fetch` script — no postinstall)
+- Modify: `.github/workflows/ci.yml` (cache + fetch step before `npm ci`)
 
-**Step 1: Add the download script.**
+**Step 1: Add the fetch script.**
 
 ```js
-// scripts/download-cliopatria.mjs
+// scripts/fetch-cliopatria.mjs
 import { createWriteStream, existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { pipeline } from "node:stream/promises";
 
 const URL =
-  "https://raw.githubusercontent.com/Seshat-Global-History-Databank/cliopatria/main/world.geojson";
-const DEST = "public/data/cliopatria.geojson";
+  "https://firebasestorage.googleapis.com/v0/b/chrono-carta.firebasestorage.app/o/cliopatria.geojson?alt=media";
+const DEST = "public/data/cliopatria-0.0.1/cliopatria.geojson";
 
 if (existsSync(DEST)) {
-  console.log(`[cliopatria] already present at ${DEST}, skipping download.`);
+  console.log(`[cliopatria] already present at ${DEST}, skipping.`);
   process.exit(0);
 }
 
@@ -47,38 +48,46 @@ await pipeline(response.body, createWriteStream(DEST));
 console.log(`[cliopatria] wrote ${DEST}`);
 ```
 
-Confirm the canonical Cliopatria URL before pasting — the URL above is illustrative; check the Seshat repo for the actual filename.
+Idempotent skip-if-present: local devs (who already have the file from the prior commit) see a no-op, CI cold runs fetch once, CI warm runs hit the `actions/cache` restore.
 
 **Step 2: Update `package.json` scripts.**
 
 Add to `scripts`:
 ```json
-"postinstall": "node scripts/download-cliopatria.mjs",
-"data:fetch": "node scripts/download-cliopatria.mjs"
+"data:fetch": "node scripts/fetch-cliopatria.mjs"
 ```
 
-**Step 3: Gitignore the dataset.**
+(No postinstall hook — onboarding is one explicit `npm run data:fetch` instead of every `npm install` triggering a 178 MB download attempt.)
 
-Add to `.gitignore`:
-```
-# Cliopatria dataset — too large to commit; downloaded by postinstall
-public/data/cliopatria.geojson
+**Step 3: Wire into CI.**
+
+In `.github/workflows/ci.yml`, after `actions/setup-node` and before `npm ci`, add:
+
+```yaml
+      - name: Cache Cliopatria dataset
+        uses: actions/cache@v4
+        with:
+          path: public/data/cliopatria-0.0.1/cliopatria.geojson
+          key: cliopatria-v0.0.1
+
+      - run: npm run data:fetch
 ```
 
-**Step 4: Run the script and confirm.**
+The cache key is version-pinned. Bumping to `v0.0.2` requires changing this key alongside `DEFAULT_PATH` and the script's `DEST` — see [README.md](../../README.md)'s *"Updating the Cliopatria dataset"* section for the full upgrade checklist.
+
+**Step 4: Verify locally.**
 
 ```
 npm run data:fetch
-ls -la public/data/cliopatria.geojson
 ```
 
-Expect: a 50–100 MB file present.
+Expect: `[cliopatria] already present at public/data/cliopatria-0.0.1/cliopatria.geojson, skipping.` (the file is already in place from the prior `chore(data): pin cliopatria v0.0.1` commit).
 
 **Step 5: Commit.**
 
 ```
-git add scripts/download-cliopatria.mjs package.json package-lock.json .gitignore
-git commit -m "chore(data): cliopatria dataset download script + postinstall hook"
+git add scripts/fetch-cliopatria.mjs package.json package-lock.json .github/workflows/ci.yml
+git commit -m "chore(data): npm run data:fetch + ci cache step for cliopatria"
 ```
 
 ---
@@ -168,7 +177,7 @@ export interface CliopatriaFeatureCollection {
 let cache: CliopatriaFeatureCollection | null = null;
 let cachedPath: string | null = null;
 
-const DEFAULT_PATH = "public/data/cliopatria.geojson";
+const DEFAULT_PATH = "public/data/cliopatria-0.0.1/cliopatria.geojson";
 
 export async function loadCliopatria(
   path: string = DEFAULT_PATH,
@@ -367,12 +376,12 @@ git commit -m "feat(cliopatria): stripYearData drops year + auxiliary fields"
 
 The unit tests use the mini fixture for speed. One additional test confirms the real dataset parses.
 
-**Step 1: Add the smoke test (skipped if file is absent so CI doesn't break before postinstall has run).**
+**Step 1: Add the smoke test (skipped if file is absent so CI doesn't break if `data:fetch` hasn't been run yet, or for contributors who haven't fetched the dataset locally).**
 
 ```ts
 import { existsSync } from "node:fs";
 
-const realDatasetPresent = existsSync("public/data/cliopatria.geojson");
+const realDatasetPresent = existsSync("public/data/cliopatria-0.0.1/cliopatria.geojson");
 const describeWithRealDataset = realDatasetPresent ? describe : describe.skip;
 
 describeWithRealDataset("real cliopatria dataset", () => {
@@ -405,59 +414,14 @@ git commit -m "test(cliopatria): smoke test against real dataset, skipped when a
 
 ---
 
-## Task 7: Wire postinstall into CI
-
-**Files:**
-- Modify: `.github/workflows/ci.yml`
-
-**Step 1: Cache the dataset between runs to avoid re-downloading every CI run.**
-
-Add a cache step before `npm ci`:
-```yaml
-      - name: Cache Cliopatria dataset
-        uses: actions/cache@v4
-        with:
-          path: public/data/cliopatria.geojson
-          key: cliopatria-${{ hashFiles('scripts/download-cliopatria.mjs') }}
-```
-
-`npm ci` will trigger the postinstall, which is a no-op when the file is present.
-
-**Step 2: Run CI locally if `act` is installed, or push the branch and watch.**
-
-**Step 3: Commit.**
-
-```
-git add .github/workflows/ci.yml
-git commit -m "ci: cache cliopatria dataset across runs"
-```
-
----
-
-## Task 8: Architecture doc + plan deviations
-
-**Files:**
-- Modify: `chrono-carta-architecture.md` if any concrete detail (file path, function signatures) differs from what the doc says.
-- Modify: `docs/plans/2026-04-29-project-bootstrap.md` deviations section if a deviation occurred.
-
-Most likely no doc change needed — the architecture is already specific about Cliopatria.
-
-**Commit if any:**
-
-```
-git add chrono-carta-architecture.md docs/plans/2026-04-29-project-bootstrap.md
-git commit -m "docs(arch): update cliopatria section to match phase-6 implementation"
-```
-
----
-
 ## Verification before merge
 
-- `npm test -- --selectProjects unit` → all green
+- `npm test -- --selectProjects unit` → all green (the smoke tests against the real dataset are part of this; require `npm run data:fetch` to have populated the file).
 - `npx tsc --noEmit` → clean
 - `npm run lint` → clean
-- `npm run build` → clean (build runs postinstall implicitly via `npm ci`)
+- `npm run build` → clean
 - `git status` → clean
+- Architecture doc, CLAUDE.md, and README's upgrade-checklist already reflect the v0.0.1 path and Firebase mirror (landed in the prior `chore(data): pin cliopatria v0.0.1 + firebase-hosted ci copy` commit). Update only if implementation surfaces further drift — e.g., if `lib/cliopatria.ts`'s public surface ends up differing from what the architecture doc names.
 
 ## Merge
 
