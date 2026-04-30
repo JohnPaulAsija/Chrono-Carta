@@ -120,6 +120,7 @@ Tracked here so they don't get lost. Each entry should name a date/window for ac
 
 - **Bump GitHub Actions runners off Node.js 20** — flagged by the CI deprecation notice on the Phase 4 run. `actions/checkout@v4` and `actions/setup-node@v4` run on Node 20, which gets removed from runners **2026-09-16**. Revisit around **mid-to-late May 2026**: either pin newer action major versions (e.g. `actions/checkout@v5` once stable) or set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` on the workflow. Not blocking anything until well past v1 launch.
 - **Move App Hosting backend to `us-west1`** — current backend is in `us-east4`; Supabase is in `us-west-2`. Recreate before public launch to cut ~50–75 ms off Server-Action latency.
+- **Enable Supabase Auth leaked-password protection (HIBP)** — flagged by the database advisor on the TEST branch during Phase 3 verification. Toggle in the dashboard at Authentication → Settings → "Leaked Password Protection". Trivially cheap defence-in-depth. Not blocking — sign-ups are disabled, so the only signup path is the dashboard-driven admin Add-User flow which bypasses normal validation anyway. Worth flipping on once before launch in case sign-ups ever get re-enabled.
 
 ## Out of Scope for v1
 
