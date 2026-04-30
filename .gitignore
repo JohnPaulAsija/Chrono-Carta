@@ -50,6 +50,10 @@ pnpm-debug.log*
 public/data/cliopatria-0.0.1/cliopatria.geojson
 public/data/cliopatria-0.0.1/cliopatria.geojson.zip
 
+# Git worktrees — feature/phase work happens in .worktrees/<name>/
+# per the using-git-worktrees skill convention.
+.worktrees/
+
 # Misc
 *.pem
 /.claude
