@@ -6,7 +6,9 @@
 
 **Architecture:** Per architecture §Map Viewer. Built on `react-simple-maps` with a `Geographies` + `Geography` layout, custom centroid label rendering above a polygon-area threshold, hover state lifted to a `highlightedEntity` parent piece of state. Legend is a sibling component that reads/writes the same state. Layout is map-on-left / legend-on-right desktop, stacked on tablet.
 
-**Tech Stack:** `react-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests.
+**Tech Stack:** `react-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests. `@types/geojson` is already a devDep from Phase 6 — import named types from `"geojson"` (e.g. `import type { FeatureCollection } from "geojson"`) rather than relying on the global `GeoJSON` namespace, which doesn't auto-globalize under our `module: esnext` / `moduleResolution: bundler` config.
+
+**Test convention:** All array-index access in test fixtures uses a non-null assertion (e.g. `fixture.features[0]!.properties.color`). The project's `tsconfig.json` enables `noUncheckedIndexedAccess`, so raw `arr[0]` returns `T | undefined`. In tests we authored the fixture and know the shape — `!` is the right call. For dynamic lookups, prefer `features.find(f => f.properties.Name === "…")!` over indexing.
 
 ---
 
@@ -65,7 +67,7 @@ describe("MapViewer", () => {
       <MapViewer geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
     );
     const first = container.querySelector("path[data-entity-name]");
-    expect(first?.getAttribute("fill")).toBe(fixture.features[0].properties.color);
+    expect(first?.getAttribute("fill")).toBe(fixture.features[0]!.properties.color);
   });
 });
 ```
@@ -77,10 +79,11 @@ describe("MapViewer", () => {
 ```tsx
 "use client";
 
+import type { FeatureCollection } from "geojson";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 
 export interface MapViewerProps {
-  geojson: GeoJSON.FeatureCollection;
+  geojson: FeatureCollection;
   centerLat: number;
   centerLng: number;
   zoom: number;
