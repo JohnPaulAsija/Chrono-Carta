@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+
 import {
   _resetCliopatriaCache,
   filterByYear,
@@ -6,6 +8,7 @@ import {
 } from "@/lib/cliopatria";
 
 const FIXTURE = "tests/fixtures/cliopatria-mini.geojson";
+const REAL_DATASET = "public/data/cliopatria-0.0.1/cliopatria.geojson";
 
 beforeEach(() => _resetCliopatriaCache());
 
@@ -100,5 +103,20 @@ describe("stripYearData", () => {
     const props = stripYearData([boundaria])[0]!.properties;
     expect(props).toEqual({ Name: "Boundaria" });
     expect(props).not.toHaveProperty("MemberOf");
+  });
+});
+
+const realDatasetPresent = existsSync(REAL_DATASET);
+const describeWithRealDataset = realDatasetPresent ? describe : describe.skip;
+
+describeWithRealDataset("real cliopatria dataset", () => {
+  it("parses without error and contains thousands of features", async () => {
+    const fc = await loadCliopatria();
+    expect(fc.features.length).toBeGreaterThan(1000);
+  });
+
+  it("filterByYear(1815) returns a non-empty subset", async () => {
+    const fc = await loadCliopatria();
+    expect(filterByYear(fc.features, 1815).length).toBeGreaterThan(0);
   });
 });
