@@ -152,7 +152,7 @@ Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending o
 - **Map rendering:** `react-simple-maps` for GeoJSON polygon rendering with D3 geo projections
 - **Supabase clients:** Two server-side clients with distinct security profiles (see Project Structure below), plus a client-side instance for auth session management only:
   - `getGameClient()` — uses the Supabase **secret key** (Postgres `service_role`). Bypasses RLS. Used exclusively in gameplay Server Actions where there is no authenticated user and the game state token handles access control.
-  - `getCuratorClient(session)` — created from the curator's JWT. Respects RLS. Used in all admin panel Server Actions. The session parameter is a natural guardrail — you can't use this client without actively extracting an auth session.
+  - `getServerSupabase()` — built from `@supabase/ssr`'s `createServerClient`, reading the session from cookies set by Supabase Auth. Respects RLS. Used in middleware, Server Components, and Server Actions across `app/(admin)/`. The route-group split is the security guarantee — the secret-key client never lives under `app/(admin)`, so the admin path always reaches Supabase via this RLS-respecting helper.
   - Client-side instance — uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the `sb_publishable_*` key, which authenticates as the Postgres `anon` / `authenticated` roles). Used in the browser only for Supabase Auth session management (login, logout, session refresh). Never used for data reads or writes.
 
 ### Key Views
@@ -210,7 +210,7 @@ app/
 │   │   └── page.tsx           # Credits page (static, no data fetching)
 │   └── actions.ts             # Gameplay Server Actions (start game, submit guess)
 │
-├── (admin)/                   # Curator/admin routes — uses getCuratorClient(session)
+├── (admin)/                   # Curator/admin routes — uses getServerSupabase()
 │   ├── admin/
 │   │   ├── page.tsx           # Map management view
 │   │   ├── create/
@@ -226,8 +226,8 @@ app/
 lib/
 ├── supabase/
 │   ├── game-client.ts         # getGameClient() — secret key, bypasses RLS
-│   ├── curator-client.ts      # getCuratorClient(session) — user JWT, respects RLS
-│   └── browser-client.ts      # createBrowserClient() — publishable key, auth only
+│   ├── server-client.ts       # getServerSupabase() — cookies-based JWT, respects RLS
+│   └── browser-client.ts      # getBrowserClient() — publishable key, auth only
 ├── cliopatria.ts              # loadCliopatria(), filterByYear(), stripYearData()
 ├── game-state.ts              # signToken(), verifyToken(), formatAnswer(), assembleOptions()
 └── map-colors.ts              # assignColors() — graph coloring for entity polygons
@@ -235,10 +235,10 @@ lib/
 
 **Key conventions:**
 
-- Server Actions in `app/(game)/actions.ts` import only from `lib/supabase/game-client.ts`. Never from `curator-client.ts`.
-- Server Actions in `app/(admin)/actions.ts` import only from `lib/supabase/curator-client.ts`. Never from `game-client.ts`.
-- A code review that sees a cross-import between these two boundaries is an immediate red flag.
-- The `getCuratorClient(session)` function requires an auth session as a parameter. This makes accidental use in unauthenticated contexts a type error, not a silent security bug.
+- Server Actions, Server Components, and middleware in `app/(game)/...` import only from `lib/supabase/game-client.ts`. Never from `server-client.ts`.
+- Anything under `app/(admin)/...` imports only from `lib/supabase/server-client.ts`. Never from `game-client.ts`.
+- A code review that sees a cross-import between these two boundaries is an immediate red flag — the route-group split is the security boundary, not anything in the function signatures themselves.
+- `getServerSupabase()` reads the auth session from cookies via `@supabase/ssr`. PostgREST evaluates RLS as the authenticated user. An unauthenticated request reaches the same function but the cookie session is missing — the resulting client behaves as the anon role, RLS denies, and middleware redirects to login before any data path runs.
 
 ### Data Flow
 
@@ -421,6 +421,8 @@ The TEST branch's credentials (`SUPABASE_TEST_URL`, `SUPABASE_TEST_PUBLISHABLE_K
 
 Test setup signs in as the seeded curator and admin via `signInAs(role)`, then exercises RLS through their user-JWT clients. Map fixtures are inserted with a `RLS_TEST_` title prefix so `cleanupTestMaps()` can delete only test data via the service-role client; real curator data carries no such prefix and is never touched.
 
+Production code reaches Supabase through `getServerSupabase()`, which reads the session from cookies via `@supabase/ssr`. Tests skip the cookie machinery — Node has no cookie context — and instead inject `access_token` directly into the `Authorization` header (see `createAuthedTestClient` in `tests/integration/setup.ts`). The wire-level request to PostgREST is byte-for-byte equivalent in both cases, so RLS evaluation is identical. The cookie-handling path is exercised end-to-end by Playwright; integration tests are deliberately scoped narrower (RLS policy behavior).
+
 Key test cases:
 
 - A curator can INSERT a map with their own `created_by`.
@@ -521,9 +523,9 @@ RLS policies enforce access at the database level, independent of application co
 The two-client pattern determines which policies apply in each context:
 
 - **`getGameClient()`** (Supabase secret key) **bypasses RLS entirely.** Gameplay Server Actions use this client to read map data (including `geojson_data`), check answers, and return reveal text for anonymous players. Access control for gameplay is handled by the signed game state token, not by RLS.
-- **`getCuratorClient(session)`** (user JWT) **respects RLS.** Admin panel Server Actions use this client for all database operations. The policies below govern what curators and admins can do.
+- **`getServerSupabase()`** (user JWT, derived from cookies via `@supabase/ssr`) **respects RLS.** Admin-panel middleware, Server Components, and Server Actions all reach Supabase through this helper. The policies below govern what curators and admins can do.
 
-### Policies enforced via `getCuratorClient(session)`
+### Policies enforced via `getServerSupabase()`
 
 **`maps` table:**
 
@@ -548,11 +550,11 @@ The two-client pattern determines which policies apply in each context:
 
 **`roles` table:**
 
-- **Public (anon):** No access. Role information is only used server-side in RLS policy checks and by `getCuratorClient(session)`.
+- **Public (anon):** No access. Role information is only used server-side in RLS policy checks and by `private.is_admin()`, never by application code directly.
 
 ### Key security invariant
 
-The secret-key client (`getGameClient()`) is used **only** in `app/(game)/actions.ts`. The curator client (`getCuratorClient(session)`) is used **only** in `app/(admin)/actions.ts`. This boundary is enforced by project structure convention (see Project Structure above) and verified in code review. If the secret-key client is used in the admin panel, RLS is silently bypassed and curators can edit anyone's maps. If the curator client is used in gameplay, anonymous players get permission errors and the game breaks.
+The secret-key client (`getGameClient()`) is used **only** under `app/(game)/`. The cookies-based RLS client (`getServerSupabase()`) is used **only** under `app/(admin)/`. This boundary is enforced by project structure convention (see Project Structure above) and verified in code review. If the secret-key client is used in the admin panel, RLS is silently bypassed and curators can edit anyone's maps. If the RLS client is used in gameplay, anonymous players get permission errors and the game breaks.
 
 ### CSRF and Cross-Origin Protection
 
