@@ -39,6 +39,12 @@ jobs:
       SUPABASE_TEST_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_PUBLISHABLE_KEY }}
       SUPABASE_TEST_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SECRET_KEY }}
 
+      # Passwords for the two seeded auth users on the TEST branch.
+      # The integration suite signs in as them via signInAs(role) to
+      # exercise RLS as real curator / admin.
+      TEST_CURATOR_PASSWORD: ${{ secrets.TEST_CURATOR_PASSWORD }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+
     steps:
       - uses: actions/checkout@v4
 
