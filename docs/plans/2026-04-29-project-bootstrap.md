@@ -198,13 +198,16 @@ This task is small, fast, and proves the unit test runner is wired correctly —
 
 **Steps:**
 
-1. Implement `app/(admin)/login/page.tsx` using the browser anon client for `signInWithPassword`.
+1. Implement `app/(admin)/login/page.tsx` using the browser publishable-key client for `signInWithPassword`.
 2. Add `middleware.ts` protecting `/admin/*` — redirect to `/admin/login` if no session.
 3. Implement `app/(admin)/admin/page.tsx` as a Server Component that reads the session, calls `getCuratorClient(session)`, queries `maps` for the current user (RLS does the filtering), and renders the empty-state.
-4. Add a Playwright E2E test logging in as the seeded curator and asserting the empty-state renders. Add Playwright as a CI job per architecture §CI Pipeline §5.
-5. Commit + PR + merge.
+4. **Wire up `requireUserProfile` from `lib/auth/profile.ts`** as the Server Component's first call after the session check (or in `middleware.ts`). The helper was written in Phase 3 with only test callers — Phase 5 is its first production use. Two things to validate while wiring:
+   - Whether the throw-on-missing pattern is the right ergonomics for Server Components, or whether the helper should return a discriminated `{ ok, profile } | { error, kind }` instead. Refactor the helper if Server Components find the throw awkward.
+   - Whether `requireUserProfile` belongs in middleware (cheap session check) or in each Server Action (closer to the data access). Architecture doesn't dictate; pick during this phase.
+5. Add a Playwright E2E test logging in as the seeded curator and asserting the empty-state renders. Add Playwright as a CI job per architecture §CI Pipeline §5.
+6. Commit + PR + merge.
 
-**Verification:** Logged-out visitor to `/admin` is redirected. Logged-in curator sees the empty management view. Playwright passes locally and in CI. Firebase preview URL serves the same flow.
+**Verification:** Logged-out visitor to `/admin` is redirected. Logged-in curator sees the empty management view. Logged-in curator with no `public.users` row gets the "user profile not found" path (re-validates the Phase 3 helper test in real Server Action context). Playwright passes locally and in CI. Firebase preview URL serves the same flow.
 
 ---
 
