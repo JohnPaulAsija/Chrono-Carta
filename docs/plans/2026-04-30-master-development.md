@@ -4,7 +4,7 @@
 
 **Goal:** Carry ChronoCarta from "auth slice live in production" (the state at the end of the bootstrap plan, Phase 5) to v1 launch. Every column in the `maps` schema becomes reachable through real curator UI; players can complete a full game; the production environment exists; CI keeps everything green throughout.
 
-**Tech Stack carried forward from the bootstrap plan:** Next.js App Router (TypeScript, strict + `noUncheckedIndexedAccess`), Supabase (Postgres + Auth, two-client boundary via `getGameClient` and `getServerSupabase`), Jest + RTL for unit/component/integration, Playwright for E2E, Firebase App Hosting on Cloud Run, GitHub Actions CI, Tailwind v4 for styles. New for v1: `react-simple-maps` for polygon rendering, `jose` for the game-state JWT, `@turf/turf` (likely) for polygon adjacency.
+**Tech Stack carried forward from the bootstrap plan:** Next.js App Router (TypeScript, strict + `noUncheckedIndexedAccess`), Supabase (Postgres + Auth, two-client boundary via `getGameClient` and `getServerSupabase`), Jest + RTL for unit/component/integration, Playwright for E2E, Firebase App Hosting on Cloud Run, GitHub Actions CI, Tailwind v4 for styles. New for v1: `react19-simple-maps` for polygon rendering, `jose` for the game-state JWT, `@turf/turf` (likely) for polygon adjacency.
 
 **Architecture invariants** (from `chrono-carta-architecture.md` and `CLAUDE.md`, repeated for emphasis): two-client boundary enforced by route group; correct answers never reach the client before a guess; signed integer years with no year 0; ephemeral game-state JWT in React state only; Cliopatria on the filesystem, per-map filtered output in `maps.geojson_data`; desktop/tablet only.
 
@@ -40,7 +40,7 @@ The order below is "build the layers from the bottom up so each layer compiles a
 
 ### Phase 7 — Map viewer component ([detail](2026-04-30-phase-7-map-viewer-component.md))
 
-`react-simple-maps` integration. `app/(game)/play/MapViewer.tsx` (Client Component) renders a `geojson_data` blob with permanent labels above a size threshold, hover tooltips, and a legend panel of unlabeled entities. Pan/zoom controls. Highlighting state shared between map and legend.
+`react19-simple-maps` integration. `app/(game)/play/MapViewer.tsx` (Client Component) renders a `geojson_data` blob with permanent labels above a size threshold, hover tooltips, and a legend panel of unlabeled entities. Pan/zoom controls. Highlighting state shared between map and legend.
 
 **Why second.** Both Phase 9 (creation preview) and Phase 12 (gameplay) instantiate this component, so building it before either consumer means downstream work is mostly composition. Building it before Phase 8's coloring algorithm also gives that algorithm a render to validate against — adjacent same-color regions show up immediately in a map view, which test assertions alone won't catch as cheaply.
 

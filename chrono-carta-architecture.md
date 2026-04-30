@@ -149,7 +149,7 @@ Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending o
 - **Framework:** Next.js (App Router with React Server Components)
 - **Hosting:** Firebase App Hosting (runs on Cloud Run under the hood, supports SSR and Server Actions natively via the Next.js Deployment Adapter API)
 - **Database:** Supabase Postgres for map metadata (including pre-filtered GeoJSON), user accounts, and roles
-- **Map rendering:** `react-simple-maps` for GeoJSON polygon rendering with D3 geo projections
+- **Map rendering:** `react19-simple-maps` for GeoJSON polygon rendering with D3 geo projections — a maintained fork of `react-simple-maps` with React 19 peer deps, bundled TypeScript types, and ESM/CJS/UMD builds compatible with Next 16 / Turbopack. Always pass `geojson` as an in-memory object loaded server-side, never as a URL string, to avoid client-side async-fetch hydration mismatches in `Geographies`.
 - **Supabase clients:** Two server-side clients with distinct security profiles (see Project Structure below), plus a client-side instance for auth session management only:
   - `getGameClient()` — uses the Supabase **secret key** (Postgres `service_role`). Bypasses RLS. Used exclusively in gameplay Server Actions where there is no authenticated user and the game state token handles access control.
   - `getServerSupabase()` — built from `@supabase/ssr`'s `createServerClient`, reading the session from cookies set by Supabase Auth. Respects RLS. Used in middleware, Server Components, and Server Actions across `app/(admin)/`. The route-group split is the security guarantee — the secret-key client never lives under `app/(admin)`, so the admin path always reaches Supabase via this RLS-respecting helper.
@@ -166,7 +166,7 @@ Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending o
 
 ### Map Viewer
 
-The map viewer is a Client Component using `react-simple-maps` to render GeoJSON polygons as an interactive political map. It occupies the main portion of the game screen with a legend panel alongside and multiple-choice options below.
+The map viewer is a Client Component using `react19-simple-maps` to render GeoJSON polygons as an interactive political map. It occupies the main portion of the game screen with a legend panel alongside and multiple-choice options below.
 
 **Rendering:**
 
@@ -205,7 +205,7 @@ app/
 │   ├── play/
 │   │   ├── page.tsx           # Game screen (Server Component shell)
 │   │   ├── GameBoard.tsx      # Client Component (map renderer, legend, guess buttons)
-│   │   └── MapViewer.tsx      # Client Component (react-simple-maps rendering, hover/highlight)
+│   │   └── MapViewer.tsx      # Client Component (react19-simple-maps rendering, hover/highlight)
 │   ├── credits/
 │   │   └── page.tsx           # Credits page (static, no data fetching)
 │   └── actions.ts             # Gameplay Server Actions (start game, submit guess)
@@ -245,7 +245,7 @@ lib/
 To prevent players from inspecting correct answers via browser dev tools, game logic runs server-side in Next.js Server Components and Server Actions rather than fetching all map data to the client.
 
 1. On game start, a Server Action selects up to `ROUNDS_PER_GAME` random active maps from Supabase (or all active maps if fewer exist) and returns the first map's `geojson_data` (pre-filtered polygons with no year information), viewport settings (`center_lat`, `center_lng`, `zoom_level`), and multiple-choice options (read from `formatted_correct` and `formatted_wrong`, combined and shuffled). A signed game state token containing the map IDs, sequence order, and initial progress is also returned. The precision level and raw integers are not sent to the client.
-2. The client renders the political map from the GeoJSON data using `react-simple-maps`, applies entity colors, and displays the legend panel.
+2. The client renders the political map from the GeoJSON data using `react19-simple-maps`, applies entity colors, and displays the legend panel.
 3. The player submits a guess. A Server Action receives the token and the selected display string. It verifies the token, confirms this map hasn't already been guessed, compares the selected string against `formatted_correct` from the database, and returns: whether the guess was correct, the `formatted_correct` value, the reveal text, and (if maps remain) the next map's `geojson_data`, viewport settings, and options (combined and shuffled from the next map's `formatted_correct` and `formatted_wrong`). A new token with updated progress is returned. If this was the final map, the response includes the game summary and no new token.
 4. The client shows the reveal screen with the correct answer and the curator's explanation of visual tells. On non-final maps, a "Next Map" button advances to the next round using the data already received. On the final map, a "See Results" button leads to the end screen.
 5. The correct answer never reaches the client until after the player has committed a guess. The signed token prevents brute-force guessing because the server rejects repeated attempts on the same map. The client cannot request data for an arbitrary map — it's always the next unguessed map in the token's sequence. The GeoJSON data contains no year information, so inspecting it reveals only entity names and shapes — which is the puzzle, not the answer.
@@ -295,7 +295,7 @@ The admin panel presents a form for creating a new map. No file upload is requir
 
 **Step 1: Select year and preview.**
 
-The curator enters a year (number input with AD/BC toggle). A Server Action filters the Cliopatria dataset for that year and returns the matching GeoJSON data. The form renders a live interactive preview of the resulting political map — the same `react-simple-maps` component used in gameplay. The curator can verify that the data is accurate and interesting for the game before proceeding.
+The curator enters a year (number input with AD/BC toggle). A Server Action filters the Cliopatria dataset for that year and returns the matching GeoJSON data. The form renders a live interactive preview of the resulting political map — the same `react19-simple-maps` component used in gameplay. The curator can verify that the data is accurate and interesting for the game before proceeding.
 
 **Step 2: Frame the viewport.**
 
@@ -455,7 +455,7 @@ Performance benchmarks, load testing, and visual regression testing. These matte
 
 **Token errors (expired, malformed, tampered).** The Server Action returns a distinct error code. The client shows "Your game session has expired" with a button to start a new game. No retry — the token is permanently invalid.
 
-**GeoJSON rendering failure.** The GeoJSON data arrives but `react-simple-maps` fails to render it (malformed geometry, unsupported feature type). The game screen shows a fallback message but still allows the player to submit a guess — the multiple-choice options are available even if the map isn't visible. This is unlikely in practice since the data is pre-filtered and validated at map creation time.
+**GeoJSON rendering failure.** The GeoJSON data arrives but `react19-simple-maps` fails to render it (malformed geometry, unsupported feature type). The game screen shows a fallback message but still allows the player to submit a guess — the multiple-choice options are available even if the map isn't visible. This is unlikely in practice since the data is pre-filtered and validated at map creation time.
 
 ### Admin Panel Errors
 

@@ -4,9 +4,13 @@
 
 **Goal:** A reusable `MapViewer` Client Component that renders a `geojson_data` blob with permanent labels, hover tooltips, a legend panel of unlabeled entities, pan/zoom controls, and shared highlight state — used by Phase 9 (creation preview) and Phase 12 (gameplay).
 
-**Architecture:** Per architecture §Map Viewer. Built on `react-simple-maps` with a `Geographies` + `Geography` layout, custom centroid label rendering above a polygon-area threshold, hover state lifted to a `highlightedEntity` parent piece of state. Legend is a sibling component that reads/writes the same state. Layout is map-on-left / legend-on-right desktop, stacked on tablet.
+**Architecture:** Per architecture §Map Viewer. Built on `react19-simple-maps` with a `Geographies` + `Geography` layout, custom centroid label rendering above a polygon-area threshold, hover state lifted to a `highlightedEntity` parent piece of state. Legend is a sibling component that reads/writes the same state. Layout is map-on-left / legend-on-right desktop, stacked on tablet.
 
-**Tech Stack:** `react-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests. `@types/geojson` is already a devDep from Phase 6 — import named types from `"geojson"` (e.g. `import type { FeatureCollection } from "geojson"`) rather than relying on the global `GeoJSON` namespace, which doesn't auto-globalize under our `module: esnext` / `moduleResolution: bundler` config.
+**Tech Stack:** `react19-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests. `@types/geojson` is already a devDep from Phase 6 — import named types from `"geojson"` (e.g. `import type { FeatureCollection } from "geojson"`) rather than relying on the global `GeoJSON` namespace, which doesn't auto-globalize under our `module: esnext` / `moduleResolution: bundler` config.
+
+**Why the fork over upstream `react-simple-maps`.** Upstream (`@3.0.0`, last released 2023) declares `react@^16/17/18` peer deps and is effectively unmaintained — installing it under our React 19.2.4 / Next 16 stack requires `--legacy-peer-deps` or an override. `react19-simple-maps` is a maintained fork with proper React 19 peer deps, ESM/CJS/UMD builds (a recent fork release patched a Turbopack-incompatible UMD export), bundled TypeScript types (no separate `@types/` package needed), and the same `ComposableMap` / `Geographies` / `Geography` / `ZoomableGroup` API surface.
+
+**SSR boundary.** The viewer is a Client Component (`"use client"`) for one specific reason: `ZoomableGroup` uses `d3-zoom`, which attaches event listeners to live DOM nodes and reads element dimensions — neither works during server render. The other classic hazard with this library — `Geographies` performing an async URL fetch on the client and producing a hydration mismatch — does not apply here because we always pass `geojson` as an in-memory object loaded server-side from `maps.geojson_data`. Never pass a URL string to `Geographies` in this project.
 
 **Test convention:** All array-index access in test fixtures uses a non-null assertion (e.g. `fixture.features[0]!.properties.color`). The project's `tsconfig.json` enables `noUncheckedIndexedAccess`, so raw `arr[0]` returns `T | undefined`. In tests we authored the fixture and know the shape — `!` is the right call. For dynamic lookups, prefer `features.find(f => f.properties.Name === "…")!` over indexing.
 
@@ -14,15 +18,18 @@
 
 ## Task 1: Install dependencies
 
+The fork ships its own TypeScript types — no separate `@types/` devDep.
+
 ```
-npm i react-simple-maps
-npm i -D @types/react-simple-maps
+npm i react19-simple-maps
 ```
+
+Sanity-check: confirm `npx tsc --noEmit` is clean and `next build` succeeds with the package installed but unused. If `next build` fails with a Turbopack/UMD error, pin to the latest fork version that declares the fix in its release notes before continuing — this is the one known compatibility hazard with the fork on Next 15.5+ / Next 16.
 
 Commit:
 ```
 git add package.json package-lock.json
-git commit -m "chore: add react-simple-maps for polygon rendering"
+git commit -m "chore: add react19-simple-maps for polygon rendering"
 ```
 
 ---
@@ -80,7 +87,7 @@ describe("MapViewer", () => {
 "use client";
 
 import type { FeatureCollection } from "geojson";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography } from "react19-simple-maps";
 
 export interface MapViewerProps {
   geojson: FeatureCollection;
@@ -220,6 +227,8 @@ git commit -m "feat(map-viewer): responsive desktop/tablet layout"
 
 ```
 git checkout main
-git merge --no-ff phase/7-map-viewer-component -m "merge: phase 7 — map viewer with legend, labels, controls"
+git merge --no-ff phase/7-map-viewer-component-v2 -m "merge: phase 7 — map viewer with legend, labels, controls"
 git push origin main
 ```
+
+The original `phase/7-map-viewer-component` branch (3 commits using upstream `react-simple-maps`) is retained per the branch-retention rule but is not merged. Implementation work for this revised plan happens on `phase/7-map-viewer-component-v2`.

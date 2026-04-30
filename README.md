@@ -29,7 +29,7 @@ The full design lives in [chrono-carta-architecture.md](chrono-carta-architectur
 
 - **Next.js** App Router (TypeScript), React Server Components, Server Actions
 - **Supabase** Postgres + Auth, with Row-Level Security
-- **`react-simple-maps`** for GeoJSON polygon rendering
+- **`react19-simple-maps`** (React 19-compatible fork) for GeoJSON polygon rendering
 - **Firebase App Hosting** (Cloud Run) for deploy
 - **Jest + React Testing Library** for unit and component tests; **Playwright** for E2E
 

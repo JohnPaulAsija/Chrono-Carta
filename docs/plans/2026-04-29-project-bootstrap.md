@@ -195,7 +195,7 @@ This task is small, fast, and proves the unit test runner is wired correctly —
 
 **Goal:** Prove auth + curator client + RLS work in a real browser. After this, every subsequent feature plan extends a working spine instead of bootstrapping one.
 
-**Suggested slice:** Curator login → empty map management view ("you have no maps yet"). This slice exercises `getCuratorClient(session)` against live RLS without yet needing Cliopatria, the JWT lifecycle, or `react-simple-maps`.
+**Suggested slice:** Curator login → empty map management view ("you have no maps yet"). This slice exercises `getCuratorClient(session)` against live RLS without yet needing Cliopatria, the JWT lifecycle, or `react19-simple-maps`.
 
 **Steps:**
 
