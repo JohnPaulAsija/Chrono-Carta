@@ -10,13 +10,15 @@
 
 **Why the fork over upstream `react-simple-maps`.** Upstream (`@3.0.0`, last released 2023) declares `react@^16/17/18` peer deps and is effectively unmaintained — installing it under our React 19.2.4 / Next 16 stack requires `--legacy-peer-deps` or an override. `react19-simple-maps` is a maintained fork with proper React 19 peer deps, ESM/CJS/UMD builds (a recent fork release patched a Turbopack-incompatible UMD export), bundled TypeScript types (no separate `@types/` package needed), and the same `ComposableMap` / `Geographies` / `Geography` / `ZoomableGroup` API surface.
 
-**SSR boundary.** The viewer is a Client Component (`"use client"`) for one specific reason: `ZoomableGroup` uses `d3-zoom`, which attaches event listeners to live DOM nodes and reads element dimensions — neither works during server render. The other classic hazard with this library — `Geographies` performing an async URL fetch on the client and producing a hydration mismatch — does not apply here because we always pass `geojson` as an in-memory object loaded server-side from `maps.geojson_data`. Never pass a URL string to `Geographies` in this project.
+**SSR boundary.** The viewer is a Client Component (`"use client"`) for one specific reason: `ZoomableGroup` uses `d3-zoom`, which attaches event listeners to live DOM nodes and reads element dimensions — neither works during server render. The other classic hazard with this library — `Geographies` performing an async URL fetch on the client and producing a hydration mismatch — does not apply here because we always pass `geojson` as an in-memory object loaded server-side from `maps.geojson_data`. Never pass a URL string to `Geographies` in this project. If `"use client"` alone produces hydration warnings in practice (it shouldn't, given the prop-based geojson), the escape hatch is `next/dynamic(() => import("./MapViewer"), { ssr: false })` at each call site — skip server render entirely. Don't reach for this preemptively; only if observed.
 
 **Test convention:** All array-index access in test fixtures uses a non-null assertion (e.g. `fixture.features[0]!.properties.color`). The project's `tsconfig.json` enables `noUncheckedIndexedAccess`, so raw `arr[0]` returns `T | undefined`. In tests we authored the fixture and know the shape — `!` is the right call. For dynamic lookups, prefer `features.find(f => f.properties.Name === "…")!` over indexing.
 
 ---
 
-## Task 1: Install dependencies
+## Task 1: Install dependencies (fork compatibility spike)
+
+This task doubles as the compatibility spike for the fork — confirm it installs cleanly under React 19 / Next 16 and that `next build` succeeds before any component code lands. If either check fails, stop and resolve here rather than discovering it three tasks deep.
 
 The fork ships its own TypeScript types — no separate `@types/` devDep.
 
@@ -24,7 +26,10 @@ The fork ships its own TypeScript types — no separate `@types/` devDep.
 npm i react19-simple-maps
 ```
 
-Sanity-check: confirm `npx tsc --noEmit` is clean and `next build` succeeds with the package installed but unused. If `next build` fails with a Turbopack/UMD error, pin to the latest fork version that declares the fix in its release notes before continuing — this is the one known compatibility hazard with the fork on Next 15.5+ / Next 16.
+Spike checks:
+- `npx tsc --noEmit` clean.
+- `next build` succeeds with the package installed but unused. If it fails with a Turbopack/UMD error, pin to the latest fork version that declares the fix in its release notes — this is the one known compatibility hazard with the fork on Next 15.5+ / Next 16.
+- `npm test` still green (no jsdom regressions from the new dep).
 
 Commit:
 ```
