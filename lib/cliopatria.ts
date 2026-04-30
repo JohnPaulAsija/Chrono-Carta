@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
+import type { Geometry } from "geojson";
 
 export interface CliopatriaFeature {
   type: "Feature";
-  geometry: GeoJSON.Geometry;
+  geometry: Geometry;
   properties: {
     Name: string;
     FromYear: number;
@@ -42,6 +43,31 @@ export function filterByYear(
   return features.filter(
     (f) => f.properties.FromYear <= year && year <= f.properties.ToYear,
   );
+}
+
+export interface StrippedFeature {
+  type: "Feature";
+  geometry: Geometry;
+  properties: {
+    Name: string;
+    MemberOf?: string;
+  };
+}
+
+export function stripYearData(
+  features: CliopatriaFeature[],
+): StrippedFeature[] {
+  return features.map((f) => {
+    const props: StrippedFeature["properties"] = { Name: f.properties.Name };
+    if (typeof f.properties.MemberOf === "string") {
+      props.MemberOf = f.properties.MemberOf;
+    }
+    return {
+      type: "Feature",
+      geometry: f.geometry,
+      properties: props,
+    };
+  });
 }
 
 // Test-only helper. Resets the module-level cache so each test starts
