@@ -74,6 +74,9 @@ describe("RLS — curator on maps", () => {
     expect(data?.title).toBe(newTitle);
   });
 
+  // Admin coverage lives in its own describe below for clarity, even
+  // though admin operations also pass through maps_*_own_or_admin.
+
   it("CANNOT update a map owned by someone else", async () => {
     // Seed a map owned by the admin user via service-role bypass.
     const { userId: adminId } = await signInAs("admin");
@@ -113,5 +116,56 @@ describe("RLS — curator on maps", () => {
       .single();
     expect(after.error).toBeNull();
     expect(after.data?.title).toBe(originalTitle);
+  });
+});
+
+describe("RLS — admin on maps", () => {
+  beforeEach(cleanupTestMaps);
+  afterAll(cleanupTestMaps);
+
+  it("can select a map owned by a curator", async () => {
+    const { userId: curatorId } = await signInAs("curator");
+    const seeded = await seedTestMap(curatorId, "curator-owned-for-admin-read");
+
+    const { client } = await signInAs("admin");
+    const { data, error } = await client
+      .from("maps")
+      .select("id, created_by")
+      .eq("id", seeded.id)
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.id).toBe(seeded.id);
+    expect(data?.created_by).toBe(curatorId);
+  });
+
+  it("can insert a map with their own created_by", async () => {
+    const { client, userId } = await signInAs("admin");
+
+    const { data, error } = await client
+      .from("maps")
+      .insert(mapFixture(userId, "admin-insert"))
+      .select()
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.created_by).toBe(userId);
+  });
+
+  it("can update a map owned by a curator", async () => {
+    const { userId: curatorId } = await signInAs("curator");
+    const seeded = await seedTestMap(curatorId, "curator-owned-for-admin-update");
+
+    const { client } = await signInAs("admin");
+    const newTitle = `${TEST_MAP_PREFIX}admin-updated-curator-map_${Date.now()}`;
+    const { data, error } = await client
+      .from("maps")
+      .update({ title: newTitle })
+      .eq("id", seeded.id)
+      .select("id, title")
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.title).toBe(newTitle);
   });
 });
