@@ -5,11 +5,12 @@ describe("demo-years", () => {
     expect(DEMO_YEARS.map((d) => d.year)).toEqual([117, 1200, 1648, 1812, 1919]);
   });
 
-  it("each entry has a non-empty label and caption", () => {
+  it("each entry has a non-empty label, caption, and focusEntity", () => {
     for (const d of DEMO_YEARS) {
       expect(d.label.length).toBeGreaterThan(0);
       expect(d.caption.length).toBeGreaterThan(0);
       expect(d.value).toMatch(/^-?\d+$/);
+      expect(d.focusEntity.length).toBeGreaterThan(0);
     }
   });
 

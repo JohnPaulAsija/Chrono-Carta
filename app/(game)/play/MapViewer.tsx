@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { area } from "@turf/area";
 import { centroid } from "@turf/centroid";
+import type { Feature, Polygon } from "geojson";
 import {
   ComposableMap,
   createCoordinates,
@@ -35,9 +37,22 @@ export function MapViewer({
   );
   const highlightedEntity = controlledHighlight ?? internalHighlight;
   const setHighlightedEntity = onHighlight ?? setInternalHighlight;
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+      onMouseMove={(e) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}
+      onMouseLeave={() => setMousePos(null)}
+    >
       <ComposableMap projection="geoEqualEarth">
         <ZoomableGroup
           center={center ? createCoordinates(center[0], center[1]) : undefined}
@@ -67,29 +82,52 @@ export function MapViewer({
             }
           </Geographies>
           {labeledEntities?.map((feature) => {
-            const c = centroid(feature);
+            const c =
+              feature.geometry.type === "MultiPolygon"
+                ? centroid(
+                    feature.geometry.coordinates
+                      .map(
+                        (coords) =>
+                          ({
+                            type: "Feature",
+                            geometry: { type: "Polygon", coordinates: coords },
+                            properties: {},
+                          }) as Feature<Polygon>,
+                      )
+                      .reduce((best, poly) =>
+                        area(poly) > area(best) ? poly : best,
+                      ),
+                  )
+                : centroid(feature);
             const [lng, lat] = c.geometry.coordinates;
+            const MAX_LABEL_LENGTH = 18;
+            const name = feature.properties.Name;
+            const display =
+              name.length > MAX_LABEL_LENGTH
+                ? name.slice(0, MAX_LABEL_LENGTH - 1) + "…"
+                : name;
             return (
               <Marker
-                key={`label-${feature.properties.Name}`}
+                key={`label-${name}`}
                 coordinates={createCoordinates(lng!, lat!)}
               >
                 <text
-                  data-label={feature.properties.Name}
+                  data-label={name}
                   textAnchor="middle"
                   className="pointer-events-none fill-current text-xs font-medium"
                 >
-                  {feature.properties.Name}
+                  {display}
                 </text>
               </Marker>
             );
           })}
         </ZoomableGroup>
       </ComposableMap>
-      {highlightedEntity && (
+      {highlightedEntity && mousePos && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute top-2 left-2 rounded bg-black/80 px-2 py-1 text-sm text-white"
+          className="pointer-events-none absolute z-10 rounded bg-black/80 px-2 py-1 text-sm text-white"
+          style={{ left: mousePos.x + 12, top: mousePos.y - 8 }}
         >
           {highlightedEntity}
         </div>

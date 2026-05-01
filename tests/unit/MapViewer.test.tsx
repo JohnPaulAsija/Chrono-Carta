@@ -61,7 +61,7 @@ describe("MapViewer", () => {
 });
 
 describe("MapPanel — permanent labels", () => {
-  it("shows a label for entities above the area threshold", () => {
+  it("labels the top 3 entities by area", () => {
     const { container } = render(
       <MapPanel geojson={fixture} />,
     );
@@ -69,12 +69,11 @@ describe("MapPanel — permanent labels", () => {
     const labelNames = Array.from(labels).map((el) =>
       el.getAttribute("data-label"),
     );
-    expect(labelNames).toContain("Arcadia");
-    expect(labelNames).toContain("Bohemia");
-    expect(labelNames).toContain("Cascadia");
+    expect(labelNames).toHaveLength(3);
+    expect(labelNames).toContain("Megalia");
   });
 
-  it("does not show a label for entities below the area threshold", () => {
+  it("does not label the smallest entities", () => {
     const { container } = render(
       <MapPanel geojson={fixture} />,
     );
@@ -88,23 +87,15 @@ describe("MapPanel — permanent labels", () => {
 });
 
 describe("MapPanel — legend", () => {
-  it("legend lists entities below the area threshold", () => {
+  it("legend lists all entities", () => {
     render(
       <MapPanel geojson={fixture} />,
     );
     const legend = screen.getByRole("complementary");
     expect(within(legend).getByText("Dalmatia")).toBeInTheDocument();
     expect(within(legend).getByText("Elysia")).toBeInTheDocument();
-  });
-
-  it("legend does not list entities above the area threshold", () => {
-    render(
-      <MapPanel geojson={fixture} />,
-    );
-    const legend = screen.getByRole("complementary");
-    expect(within(legend).queryByText("Arcadia")).not.toBeInTheDocument();
-    expect(within(legend).queryByText("Bohemia")).not.toBeInTheDocument();
-    expect(within(legend).queryByText("Cascadia")).not.toBeInTheDocument();
+    expect(within(legend).getByText("Megalia")).toBeInTheDocument();
+    expect(within(legend).getByText("Arcadia")).toBeInTheDocument();
   });
 
   it("hovering a legend item highlights the corresponding polygon", async () => {
@@ -204,13 +195,13 @@ describe("MapPanel — layout", () => {
     const { container } = render(<MapPanel geojson={fixture} />);
     const root = container.firstElementChild!;
     expect(root.className).toContain("grid");
-    expect(root.className).toContain("lg:grid-cols-[2fr_1fr]");
+    expect(root.className).toContain("grid-cols-[65%_1fr]");
   });
 
-  it("map container has a fixed aspect ratio", () => {
+  it("map container has a fixed viewport height", () => {
     const { container } = render(<MapPanel geojson={fixture} />);
     const mapContainer = container.querySelector("[data-testid='composable-map']")!
-      .closest("[class*='aspect-']");
+      .closest("[class*='h-']");
     expect(mapContainer).not.toBeNull();
   });
 });

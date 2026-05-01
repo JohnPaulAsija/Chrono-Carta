@@ -14,25 +14,13 @@ export interface MapPanelProps {
   initialZoom?: number;
 }
 
-const LABEL_AREA_THRESHOLD = 5e10;
+const MAX_LABELS = 3;
 const ZOOM_STEP = 2;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 32;
 
-function partitionByArea(features: MapFeature[]): {
-  large: MapFeature[];
-  small: MapFeature[];
-} {
-  const large: MapFeature[] = [];
-  const small: MapFeature[] = [];
-  for (const f of features) {
-    if (area(f) >= LABEL_AREA_THRESHOLD) {
-      large.push(f);
-    } else {
-      small.push(f);
-    }
-  }
-  return { large, small };
+function topByArea(features: MapFeature[], n: number): MapFeature[] {
+  return [...features].sort((a, b) => area(b) - area(a)).slice(0, n);
 }
 
 export function MapPanel({
@@ -46,8 +34,8 @@ export function MapPanel({
   const [center, setCenter] = useState<[number, number]>(initialCenter);
   const [zoom, setZoom] = useState(initialZoom);
 
-  const { large, small } = useMemo(
-    () => partitionByArea(geojson.features),
+  const labeled = useMemo(
+    () => topByArea(geojson.features, MAX_LABELS),
     [geojson.features],
   );
 
@@ -78,15 +66,15 @@ export function MapPanel({
   }, []);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-      <div className="relative aspect-[4/3]">
+    <div className="grid grid-cols-[65%_1fr] gap-4">
+      <div className="relative h-[45vh]">
         <MapViewer
           geojson={geojson}
           center={center}
           zoom={zoom}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
-          labeledEntities={large}
+          labeledEntities={labeled}
         />
         <ZoomControls
           onZoomIn={handleZoomIn}
@@ -94,9 +82,9 @@ export function MapPanel({
           onReset={handleReset}
         />
       </div>
-      <div>
+      <div className="h-[45vh] overflow-y-auto">
         <Legend
-          entities={small}
+          entities={geojson.features}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
           onSelect={handleSelect}

@@ -57,6 +57,17 @@
         "Name": "Elysia",
         "color": "#f39c12"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-30, -20], [30, -20], [30, 20], [-30, 20], [-30, -20]]]
+      },
+      "properties": {
+        "Name": "Megalia",
+        "color": "#1abc9c"
+      }
     }
   ]
 }
