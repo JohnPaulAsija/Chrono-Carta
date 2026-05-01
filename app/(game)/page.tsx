@@ -58,6 +58,21 @@ export default async function Home({
         initialCenter={center}
         initialZoom={zoom}
       />
+      <footer className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+        <p>
+          Proof of concept — active development, not a finished product.
+          Map data from{" "}
+          <a
+            href="https://github.com/aourednik/historical-basemaps"
+            className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Cliopatria
+          </a>{" "}
+          (Seshat / Ourednik, v0.0.1, CC BY-SA 4.0).
+        </p>
+      </footer>
     </div>
   );
 }
