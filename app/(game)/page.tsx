@@ -1,11 +1,5 @@
-import {
-  loadCliopatria,
-  filterByYear,
-  stripYearData,
-} from "@/lib/cliopatria";
-import { assignColors } from "@/lib/map-colors";
 import { DEMO_YEARS, DEFAULT_DEMO_YEAR, findDemoYear } from "@/lib/demo-years";
-import type { MapFeatureCollection } from "./play/types";
+import { getColoredMapForYear } from "@/lib/demo-map-cache";
 import { MapPanel } from "./play/MapPanel";
 import { YearPicker, type YearPickerOption } from "./YearPicker";
 
@@ -22,15 +16,7 @@ export default async function Home({
   const { year: yearParam } = await searchParams;
   const selected = findDemoYear(yearParam) ?? DEFAULT_DEMO_YEAR;
 
-  const dataset = await loadCliopatria();
-  const filtered = filterByYear(dataset.features, selected.year);
-  const stripped = stripYearData(filtered);
-  const colored = assignColors(stripped);
-
-  const geojson: MapFeatureCollection = {
-    type: "FeatureCollection",
-    features: colored,
-  };
+  const geojson = await getColoredMapForYear(selected.year);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-6">
