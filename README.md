@@ -6,11 +6,11 @@
 
 <https://chrono-carta--chrono-carta.us-east4.hosted.app/>
 
-The pre-launch backend is deployed to Firebase App Hosting (see [apphosting.yaml](apphosting.yaml)). The curator and gameplay flows aren't complete yet, so the deployed surface only reflects the slices that have shipped (admin login, map viewer).
+Deployed to Firebase App Hosting (see [apphosting.yaml](apphosting.yaml)). The root page is a **proof-of-concept demo**, not the real game flow — it shows the map viewer rendering coloured Cliopatria slices for a handful of preset years, switchable from a year picker. There's no guess-and-reveal loop yet; the curator and gameplay phases are still in progress.
 
 ## Screenshots
 
-> *To come.* The map viewer renders end to end (Phase 7), but the surrounding curator and gameplay screens are still being built. Screenshots will land alongside the first complete gameplay slice.
+> *To come.* The proof-of-concept demo at `/` is the first visual surface; screenshots of the real gameplay flow will land alongside the first complete guess-and-reveal slice.
 
 ## Setup
 
