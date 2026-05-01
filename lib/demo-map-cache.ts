@@ -1,7 +1,9 @@
+import { rewind } from "@turf/turf";
 import {
   loadCliopatria,
   filterByYear,
   stripYearData,
+  type CliopatriaFeature,
 } from "@/lib/cliopatria";
 import { assignColors } from "@/lib/map-colors";
 import type { MapFeatureCollection } from "@/app/(game)/play/types";
@@ -15,9 +17,9 @@ export async function getColoredMapForYear(
   if (cached) return cached;
 
   const dataset = await loadCliopatria();
-  const filtered = filterByYear(dataset.features, year).filter(
-    (f) => !f.properties.Name.startsWith("("),
-  );
+  const filtered = filterByYear(dataset.features, year)
+    .filter((f) => !f.properties.Name.startsWith("("))
+    .map((f) => rewind(f, { reverse: true }) as CliopatriaFeature);
   const stripped = stripYearData(filtered);
   const colored = assignColors(stripped);
 
