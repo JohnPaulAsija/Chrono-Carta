@@ -66,7 +66,7 @@ export function MapPanel({
   }, []);
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[65%_1fr] gap-4">
+    <div className="grid h-full grid-cols-[65%_1fr] gap-4">
       <div className="relative min-h-0">
         <MapViewer
           geojson={geojson}

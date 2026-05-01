@@ -42,7 +42,7 @@ export default async function Home({
 
   return (
     <div className="flex h-screen flex-col gap-4 overflow-hidden p-6">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <header className="shrink-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             ChronoCarta — Demo
@@ -53,11 +53,13 @@ export default async function Home({
         </div>
         <YearPicker options={PICKER_OPTIONS} selected={selected.value} />
       </header>
-      <MapPanel
-        geojson={geojson}
-        initialCenter={center}
-        initialZoom={zoom}
-      />
+      <div className="min-h-0 flex-1">
+        <MapPanel
+          geojson={geojson}
+          initialCenter={center}
+          initialZoom={zoom}
+        />
+      </div>
       <footer className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
         <p>
           Proof of concept — active development, not a finished product.
