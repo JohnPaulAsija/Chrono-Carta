@@ -64,8 +64,8 @@ export function MapPanel({
   }, [initialCenter, initialZoom]);
 
   return (
-    <div className="flex gap-4">
-      <div className="relative flex-[2]">
+    <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+      <div className="relative aspect-[4/3]">
         <MapViewer
           geojson={geojson}
           center={center}
@@ -80,7 +80,7 @@ export function MapPanel({
           onReset={handleReset}
         />
       </div>
-      <div className="flex-1">
+      <div>
         <Legend
           entities={small}
           highlightedEntity={highlightedEntity}

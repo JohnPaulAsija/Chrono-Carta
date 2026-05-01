@@ -178,3 +178,19 @@ describe("MapPanel — zoom controls", () => {
     expect(zoomGroup.getAttribute("data-zoom")).toBe(initialZoom);
   });
 });
+
+describe("MapPanel — layout", () => {
+  it("renders with responsive grid layout classes", () => {
+    const { container } = render(<MapPanel geojson={fixture} />);
+    const root = container.firstElementChild!;
+    expect(root.className).toContain("grid");
+    expect(root.className).toContain("lg:grid-cols-[2fr_1fr]");
+  });
+
+  it("map container has a fixed aspect ratio", () => {
+    const { container } = render(<MapPanel geojson={fixture} />);
+    const mapContainer = container.querySelector("[data-testid='composable-map']")!
+      .closest("[class*='aspect-']");
+    expect(mapContainer).not.toBeNull();
+  });
+});
