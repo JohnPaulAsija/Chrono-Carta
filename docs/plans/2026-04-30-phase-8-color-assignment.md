@@ -16,7 +16,7 @@ Result: every feature gets a `color` property that the client renders directly w
 
 **Design decision — option 4 (family-as-preference).** Earlier-considered alternatives (strict family / strict adjacency / two-tier rendering) all required either a hard family-vs-adjacency tradeoff or scope expansion into the renderer. Option 4 keeps the entire problem inside `lib/map-colors.ts`, sidesteps fixed-palette exhaustion by generating the palette to fit, and lets dense regions soften the family signal rather than break the adjacency rule.
 
-**Palette exhaustion is observable.** When a node is forced to a color used by a neighbor (no non-conflicting choice in the entire generated palette), `assignColors` calls `console.warn` with the feature name and adjacency count. The smoke test asserts the warning count is reasonable on real Cliopatria data.
+**Palette exhaustion is provably impossible (option A, decided during execution).** During implementation, analysis showed: total pool = sum of per-group variant counts = total feature count; any node has at most (feature count − 1) neighbors; the algorithm never assigns a color already used by a neighbor for an earlier-processed node, so a node's neighbors collectively use at most (feature count − 1) distinct colors. At least one free color always exists. The "warn and fall through" branch from the original sketch is therefore dead code under any input, and per CLAUDE.md's "no defensive code for cases that can't happen" rule we don't carry it. If both the family pool and the cross-family fallback return no candidate, `assignColors` throws — a hard signal if the invariant is ever broken (e.g., by a future change to pool sizing). The smoke test in Task 5 asserts zero adjacent same-color pairs instead of asserting a warning count.
 
 ---
 
@@ -232,7 +232,7 @@ git commit -m "feat(map-colors): distinct-color generator via golden-angle HSL s
    - Build the **preferred candidate list** = the node's family variants (its group's K-color pool), in order.
    - Build the **fallback candidate list** = all other colors (other families' bases and variants), in order of base-hue distance from the node's family base (so a forced fallback picks something visually close rather than jarring).
    - Pick the first candidate not used by any neighbor. Try preferred first, then fallback.
-   - If both lists are exhausted, pick the color used by the fewest neighbors and `console.warn({ name, neighbors: adj.get(name)!.size, fellBackTo: pick })`. The function must not throw — every feature gets a color.
+   - If both lists are exhausted, throw — this branch is provably unreachable for valid inputs (see preamble). Throwing rather than silently warning gives a hard fail signal if the pool-sizing invariant is ever broken.
 
 **Files:**
 - Modify: `tests/unit/map-colors.test.ts`
@@ -292,17 +292,9 @@ describe("assignColors", () => {
     expect(a).not.toEqual(b);
   });
 
-  it("warns and falls through (without throwing) when palette is locally exhausted", () => {
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
-    // Construct a high-degree configuration: a central polygon surrounded by N
-    // family-mates plus N other-family neighbors in a clique-like layout.
-    // (Test fixture details: pick N large enough that family variants and
-    // non-conflicting fallbacks both run out for the central node.)
-    const colored = assignColors(buildHighDegreeFixture());
-    expect(colored.every((f) => f.properties.color)).toBe(true);
-    expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
-  });
+  // Note: there is no "exhausted palette warns" test. Pool size = feature count and
+  // adjacency-driven uniqueness guarantees a free color always exists for every node;
+  // the throwing branch is unreachable for valid inputs.
 
   it("treats features without MemberOf as singleton groups", () => {
     // Two non-adjacent features, no MemberOf — they get distinct base hues, not variants of one.
@@ -379,15 +371,10 @@ export function assignColors(features: StrippedFeature[]): StrippedFeature[] {
       pick = fallback.find((c) => !usedByNeighbors.has(c));
     }
 
-    // Forced collision — warn but always assign.
     if (!pick) {
-      const all = groupKeys.flatMap((gk) => groupPool.get(gk)!);
-      const usageCount = new Map<string, number>();
-      for (const c of all) usageCount.set(c, 0);
-      for (const c of usedByNeighbors) usageCount.set(c, (usageCount.get(c) ?? 0) + 1);
-      pick = [...all].sort((a, b) => usageCount.get(a)! - usageCount.get(b)!)[0]!;
-      console.warn(
-        `[map-colors] palette exhausted for "${name}" (neighbors=${adj.get(name)!.size}); fell back to ${pick}`,
+      throw new Error(
+        `[map-colors] invariant violated: no free color for "${name}" ` +
+          `(neighbors=${adj.get(name)!.size}, pool=${features.length})`,
       );
     }
 
@@ -433,7 +420,7 @@ git commit -m "feat(map-colors): assignColors with family-as-preference graph co
 
 ## Task 5: Smoke test on filtered Cliopatria
 
-Real-data sanity check — load Cliopatria, filter at a known year (e.g. 1815), assign colors, verify every feature has a `color` property, observe that the warning rate is reasonable, and check that the vast majority of adjacent pairs have distinct colors.
+Real-data sanity check — load Cliopatria, filter at a known year (e.g. 1815), assign colors, verify every feature has a `color` property and zero adjacent pairs share a color.
 
 **Step 1: Add test (skipped if dataset absent).**
 
@@ -447,46 +434,30 @@ const realDatasetPresent = existsSync(datasetPath);
 const describeWithReal = realDatasetPresent ? describe : describe.skip;
 
 describeWithReal("assignColors on real Cliopatria filtered to 1815", () => {
-  it("annotates every feature and keeps palette-exhaustion warnings rare", async () => {
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
-
+  it("annotates every feature with a unique-from-neighbors color", async () => {
     const fc = await loadCliopatria();
     const filtered = filterByYear(fc.features, 1815);
     const stripped = stripYearData(filtered);
     const colored = assignColors(stripped);
 
-    // Every feature has a color.
     for (const f of colored) {
       expect(f.properties.color).toMatch(/^#[0-9a-f]{6}$/);
     }
 
-    // Adjacency check: count how many adjacent pairs share a color.
     const adj = computeAdjacency(colored);
     const colorByName = new Map(colored.map((f) => [f.properties.Name, f.properties.color]));
-    let conflicts = 0;
-    let pairs = 0;
     for (const [name, neighbors] of adj) {
       for (const n of neighbors) {
         if (name < n) {
-          pairs++;
-          if (colorByName.get(name) === colorByName.get(n)) conflicts++;
+          expect(colorByName.get(name)).not.toBe(colorByName.get(n));
         }
       }
     }
-    // Conflicts should be rare — these are the cases where the palette was
-    // locally exhausted for a high-degree node. Threshold is intentionally
-    // loose; tighten if it turns out to be very low in practice.
-    expect(conflicts / Math.max(pairs, 1)).toBeLessThan(0.05);
-
-    // Warnings should fire only in the cases where conflicts occurred.
-    // (One warn per forced collision.)
-    expect(warnSpy.mock.calls.length).toBe(conflicts);
-    warnSpy.mockRestore();
   });
 });
 ```
 
-**Step 2: Run.** If the conflict rate is above 5%, the assertion fails and tells us the palette / variant count needs tuning. Per the design discussion, our first lever is to widen the lightness range or add saturation variants to `generateLightnessVariants`; the second lever is to bias the family preference more aggressively toward the lightest/darkest available variant before falling through. Do not silently raise the threshold without first understanding why the rate is high — a high conflict rate on real data is the signal that the algorithm needs adjusting, not the test.
+**Step 2: Run.** Per the option-A invariant, this should always pass — adjacent pairs cannot legitimately share a color. If it fails, the algorithm has a real bug (likely in adjacency or in the greedy ordering). Investigate; do not weaken the assertion.
 
 **Step 3: Commit.**
 
