@@ -39,12 +39,12 @@ export function MapViewer({
   return (
     <div className="relative">
       <ComposableMap projection="geoEqualEarth">
-        <Sphere fill="#a8d5e2" stroke="#ccc" />
         <ZoomableGroup
           center={center ? createCoordinates(center[0], center[1]) : undefined}
           zoom={zoom}
           data-zoom={zoom}
         >
+          <Sphere fill="#a8d5e2" stroke="#ccc" />
           <Geographies geography={geojson}>
             {({ geographies }) =>
               (geographies as unknown as MapFeature[]).map((geo, i) => (
