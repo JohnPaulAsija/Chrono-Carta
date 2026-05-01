@@ -51,6 +51,26 @@ export function createCoordinates(lon: number, lat: number): [number, number] {
   return [lon, lat];
 }
 
+export function Sphere(props: { [key: string]: unknown }) {
+  return <circle data-testid="sphere" r="100" {...props} />;
+}
+
+export function Marker({
+  coordinates,
+  children,
+  ...rest
+}: {
+  coordinates: [number, number];
+  children?: React.ReactNode;
+  [key: string]: unknown;
+}) {
+  return (
+    <g data-testid="marker" data-coordinates={coordinates.join(",")} {...rest}>
+      {children}
+    </g>
+  );
+}
+
 export function ZoomableGroup({
   children,
   ...rest

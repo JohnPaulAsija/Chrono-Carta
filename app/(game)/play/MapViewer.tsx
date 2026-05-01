@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { area } from "@turf/area";
 import { centroid } from "@turf/centroid";
+import type { Feature, Polygon } from "geojson";
 import {
   ComposableMap,
   createCoordinates,
   Geographies,
   Geography,
+  Marker,
+  Sphere,
   ZoomableGroup,
 } from "@vnedyalk0v/react19-simple-maps";
 import type { MapFeature, MapFeatureCollection } from "./types";
@@ -33,15 +37,29 @@ export function MapViewer({
   );
   const highlightedEntity = controlledHighlight ?? internalHighlight;
   const setHighlightedEntity = onHighlight ?? setInternalHighlight;
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+      onMouseMove={(e) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}
+      onMouseLeave={() => setMousePos(null)}
+    >
       <ComposableMap projection="geoEqualEarth">
         <ZoomableGroup
           center={center ? createCoordinates(center[0], center[1]) : undefined}
           zoom={zoom}
           data-zoom={zoom}
         >
+          <Sphere fill="#a8d5e2" stroke="#ccc" />
           <Geographies geography={geojson}>
             {({ geographies }) =>
               (geographies as unknown as MapFeature[]).map((geo, i) => (
@@ -64,27 +82,52 @@ export function MapViewer({
             }
           </Geographies>
           {labeledEntities?.map((feature) => {
-            const c = centroid(feature);
+            const c =
+              feature.geometry.type === "MultiPolygon"
+                ? centroid(
+                    feature.geometry.coordinates
+                      .map(
+                        (coords) =>
+                          ({
+                            type: "Feature",
+                            geometry: { type: "Polygon", coordinates: coords },
+                            properties: {},
+                          }) as Feature<Polygon>,
+                      )
+                      .reduce((best, poly) =>
+                        area(poly) > area(best) ? poly : best,
+                      ),
+                  )
+                : centroid(feature);
             const [lng, lat] = c.geometry.coordinates;
+            const MAX_LABEL_LENGTH = 18;
+            const name = feature.properties.Name;
+            const display =
+              name.length > MAX_LABEL_LENGTH
+                ? name.slice(0, MAX_LABEL_LENGTH - 1) + "…"
+                : name;
             return (
-              <text
-                key={`label-${feature.properties.Name}`}
-                data-label={feature.properties.Name}
-                x={lng}
-                y={lat}
-                textAnchor="middle"
-                className="pointer-events-none fill-current text-xs font-medium"
+              <Marker
+                key={`label-${name}`}
+                coordinates={createCoordinates(lng!, lat!)}
               >
-                {feature.properties.Name}
-              </text>
+                <text
+                  data-label={name}
+                  textAnchor="middle"
+                  className="pointer-events-none fill-current text-xs font-medium"
+                >
+                  {display}
+                </text>
+              </Marker>
             );
           })}
         </ZoomableGroup>
       </ComposableMap>
-      {highlightedEntity && (
+      {highlightedEntity && mousePos && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute top-2 left-2 rounded bg-black/80 px-2 py-1 text-sm text-white"
+          className="pointer-events-none absolute z-10 rounded bg-black/80 px-2 py-1 text-sm text-white"
+          style={{ left: mousePos.x + 12, top: mousePos.y - 8 }}
         >
           {highlightedEntity}
         </div>
