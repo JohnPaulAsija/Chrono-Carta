@@ -16,12 +16,14 @@
 # Secrets are RUNTIME only; we never want their values in build artifacts.
 
 runConfig:
-  # Conservative pre-launch sizing. Cliopatria is loaded into RAM on
-  # first access (architecture §Cliopatria Loading Performance), so
-  # 512 MiB gives headroom on top of the ~50–100 MB dataset. minInstances=0
-  # means we accept cold starts in exchange for $0 idle cost.
+  # Cliopatria is loaded into RAM on first access (architecture
+  # §Cliopatria Loading Performance). The on-disk JSON is ~178 MB and
+  # JSON.parse expands to several times that in V8 heap, so we need
+  # 2 GiB to avoid OOM at cold start. Cloud Run requires cpu>=1 below
+  # 4 GiB and cpu>=2 at >=4 GiB, so 2 GiB / 1 vCPU is the sweet spot.
+  # minInstances=0 means we accept cold starts in exchange for $0 idle cost.
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 2048
   minInstances: 0
   maxInstances: 1
   concurrency: 80

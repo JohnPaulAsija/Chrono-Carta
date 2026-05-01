@@ -130,6 +130,8 @@ The adjacency computation is the most expensive step but only runs once per map 
 
 The full Cliopatria file (~180 MB unzipped at v0.0.1) is loaded into server memory on first access and cached for subsequent requests. A curator experimenting with different years triggers multiple filter operations, but after the initial load each filter is a fast in-memory scan rather than a file read. The cache persists for the lifetime of the server process. On Cloud Run, cold starts will include the initial file load (a few seconds for parse + decode); subsequent requests within the same instance are fast.
 
+The parsed JS object expands to several times the JSON text size in V8 heap (small geometry-coordinate objects carry per-object overhead), so the App Hosting backend is provisioned with **2 GiB** of memory in `apphosting.yaml`. 512 MiB is not enough — the cold-start parse will OOM-kill the container and Envoy returns a 503.
+
 ### Data Size
 
 Each pre-filtered year produces roughly 100–500 KB of GeoJSON data depending on how many entities exist at that time. For 50 maps, total storage is 5–25 MB in the database. Negligible on Supabase Pro. The full Cliopatria file is approximately 180 MB uncompressed (49 MB as the upstream `.zip`) and lives on the server filesystem under `public/data/cliopatria-0.0.1/`, not in the database.
