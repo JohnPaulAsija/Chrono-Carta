@@ -36,7 +36,7 @@ export function Geographies({
 }
 
 export function Geography({
-  geography,
+  geography: _geography,
   style: _style,
   ...rest
 }: {

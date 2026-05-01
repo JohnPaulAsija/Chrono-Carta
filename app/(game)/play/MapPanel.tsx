@@ -1,29 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Feature, FeatureCollection, Geometry } from "geojson";
-import * as turf from "@turf/turf";
+import { area } from "@turf/area";
 import { MapViewer } from "./MapViewer";
 import { Legend } from "./Legend";
+import type { MapFeature, MapFeatureCollection } from "./types";
 
 export interface MapPanelProps {
-  geojson: FeatureCollection;
-  centerLat: number;
-  centerLng: number;
-  zoom: number;
+  geojson: MapFeatureCollection;
 }
 
 const LABEL_AREA_THRESHOLD = 5e10;
 
-function partitionByArea(features: Feature<Geometry>[]): {
-  large: Feature<Geometry>[];
-  small: Feature<Geometry>[];
+function partitionByArea(features: MapFeature[]): {
+  large: MapFeature[];
+  small: MapFeature[];
 } {
-  const large: Feature<Geometry>[] = [];
-  const small: Feature<Geometry>[] = [];
+  const large: MapFeature[] = [];
+  const small: MapFeature[] = [];
   for (const f of features) {
-    const a = turf.area(f);
-    if (a >= LABEL_AREA_THRESHOLD) {
+    if (area(f) >= LABEL_AREA_THRESHOLD) {
       large.push(f);
     } else {
       small.push(f);
@@ -32,13 +28,13 @@ function partitionByArea(features: Feature<Geometry>[]): {
   return { large, small };
 }
 
-export function MapPanel({ geojson, centerLat, centerLng, zoom }: MapPanelProps) {
+export function MapPanel({ geojson }: MapPanelProps) {
   const [highlightedEntity, setHighlightedEntity] = useState<string | null>(
     null,
   );
 
   const { large, small } = useMemo(
-    () => partitionByArea(geojson.features as Feature<Geometry>[]),
+    () => partitionByArea(geojson.features),
     [geojson.features],
   );
 
@@ -47,9 +43,6 @@ export function MapPanel({ geojson, centerLat, centerLng, zoom }: MapPanelProps)
       <div className="flex-[2]">
         <MapViewer
           geojson={geojson}
-          centerLat={centerLat}
-          centerLng={centerLng}
-          zoom={zoom}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
           labeledEntities={large}

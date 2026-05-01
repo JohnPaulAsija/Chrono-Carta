@@ -1,13 +1,16 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { MapFeatureCollection } from "../../app/(game)/play/types";
 import { MapViewer } from "../../app/(game)/play/MapViewer";
 import { MapPanel } from "../../app/(game)/play/MapPanel";
-import fixture from "../fixtures/map-fixture.json";
+import fixtureRaw from "../fixtures/map-fixture.json";
+
+const fixture = fixtureRaw as unknown as MapFeatureCollection;
 
 describe("MapViewer", () => {
   it("renders one polygon per feature", () => {
     const { container } = render(
-      <MapViewer geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapViewer geojson={fixture} />,
     );
     const paths = container.querySelectorAll("path[data-entity-name]");
     expect(paths.length).toBe(fixture.features.length);
@@ -15,7 +18,7 @@ describe("MapViewer", () => {
 
   it("colors each polygon from its color property", () => {
     const { container } = render(
-      <MapViewer geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapViewer geojson={fixture} />,
     );
     const first = container.querySelector("path[data-entity-name]");
     expect(first?.getAttribute("fill")).toBe(
@@ -26,7 +29,7 @@ describe("MapViewer", () => {
   it("shows the entity name on hover", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <MapViewer geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapViewer geojson={fixture} />,
     );
     const path = container.querySelector(
       'path[data-entity-name="Arcadia"]',
@@ -38,7 +41,7 @@ describe("MapViewer", () => {
   it("hides the tooltip on mouse leave", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <MapViewer geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapViewer geojson={fixture} />,
     );
     const path = container.querySelector(
       'path[data-entity-name="Arcadia"]',
@@ -53,7 +56,7 @@ describe("MapViewer", () => {
 describe("MapPanel — permanent labels", () => {
   it("shows a label for entities above the area threshold", () => {
     const { container } = render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const labels = container.querySelectorAll("text[data-label]");
     const labelNames = Array.from(labels).map((el) =>
@@ -66,7 +69,7 @@ describe("MapPanel — permanent labels", () => {
 
   it("does not show a label for entities below the area threshold", () => {
     const { container } = render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const labels = container.querySelectorAll("text[data-label]");
     const labelNames = Array.from(labels).map((el) =>
@@ -80,7 +83,7 @@ describe("MapPanel — permanent labels", () => {
 describe("MapPanel — legend", () => {
   it("legend lists entities below the area threshold", () => {
     render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const legend = screen.getByRole("complementary");
     expect(within(legend).getByText("Dalmatia")).toBeInTheDocument();
@@ -89,7 +92,7 @@ describe("MapPanel — legend", () => {
 
   it("legend does not list entities above the area threshold", () => {
     render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const legend = screen.getByRole("complementary");
     expect(within(legend).queryByText("Arcadia")).not.toBeInTheDocument();
@@ -100,7 +103,7 @@ describe("MapPanel — legend", () => {
   it("hovering a legend item highlights the corresponding polygon", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const legend = screen.getByRole("complementary");
     const item = within(legend).getByText("Dalmatia");
@@ -114,7 +117,7 @@ describe("MapPanel — legend", () => {
   it("hovering a polygon highlights the corresponding legend item", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+      <MapPanel geojson={fixture} />,
     );
     const path = container.querySelector(
       'path[data-entity-name="Dalmatia"]',

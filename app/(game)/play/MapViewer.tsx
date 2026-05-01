@@ -1,22 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { Feature, FeatureCollection, Geometry } from "geojson";
-import * as turf from "@turf/turf";
+import { centroid } from "@turf/centroid";
 import {
   ComposableMap,
   Geographies,
   Geography,
 } from "@vnedyalk0v/react19-simple-maps";
+import type { MapFeature, MapFeatureCollection } from "./types";
 
 export interface MapViewerProps {
-  geojson: FeatureCollection;
-  centerLat: number;
-  centerLng: number;
-  zoom: number;
+  geojson: MapFeatureCollection;
   highlightedEntity?: string | null;
   onHighlight?: (name: string | null) => void;
-  labeledEntities?: Feature<Geometry>[];
+  labeledEntities?: MapFeature[];
 }
 
 export function MapViewer({
@@ -36,19 +33,19 @@ export function MapViewer({
       <ComposableMap projection="geoEqualEarth">
         <Geographies geography={geojson}>
           {({ geographies }) =>
-            geographies.map((geo, i) => (
+            (geographies as unknown as MapFeature[]).map((geo, i) => (
               <Geography
-                key={geo.properties?.Name ?? String(i)}
+                key={geo.properties.Name ?? String(i)}
                 geography={geo}
-                data-entity-name={geo.properties?.Name}
+                data-entity-name={geo.properties.Name}
                 data-highlighted={
-                  highlightedEntity === geo.properties?.Name
+                  highlightedEntity === geo.properties.Name
                     ? "true"
                     : undefined
                 }
-                fill={geo.properties?.color}
+                fill={geo.properties.color}
                 onMouseEnter={() =>
-                  setHighlightedEntity(geo.properties?.Name ?? null)
+                  setHighlightedEntity(geo.properties.Name)
                 }
                 onMouseLeave={() => setHighlightedEntity(null)}
               />
@@ -56,19 +53,18 @@ export function MapViewer({
           }
         </Geographies>
         {labeledEntities?.map((feature) => {
-          const name = feature.properties?.Name as string;
-          const centroid = turf.centroid(feature);
-          const [lng, lat] = centroid.geometry.coordinates;
+          const c = centroid(feature);
+          const [lng, lat] = c.geometry.coordinates;
           return (
             <text
-              key={`label-${name}`}
-              data-label={name}
+              key={`label-${feature.properties.Name}`}
+              data-label={feature.properties.Name}
               x={lng}
               y={lat}
               textAnchor="middle"
               className="pointer-events-none fill-current text-xs font-medium"
             >
-              {name}
+              {feature.properties.Name}
             </text>
           );
         })}

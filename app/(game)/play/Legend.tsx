@@ -1,9 +1,9 @@
 "use client";
 
-import type { Feature, Geometry } from "geojson";
+import type { MapFeature } from "./types";
 
 export interface LegendProps {
-  entities: Feature<Geometry>[];
+  entities: MapFeature[];
   highlightedEntity: string | null;
   onHighlight: (name: string | null) => void;
 }
@@ -14,8 +14,7 @@ export function Legend({ entities, highlightedEntity, onHighlight }: LegendProps
       <h3 className="text-sm font-semibold">Entities</h3>
       <ul>
         {entities.map((feature) => {
-          const name = feature.properties?.Name as string;
-          const color = feature.properties?.color as string;
+          const { Name: name, color } = feature.properties;
           const isHighlighted = highlightedEntity === name;
           return (
             <li
