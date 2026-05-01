@@ -67,7 +67,7 @@ export function MapPanel({
 
   return (
     <div className="grid h-full grid-cols-[65%_1fr] gap-4">
-      <div className="relative min-h-0">
+      <div className="relative min-h-0 overflow-hidden">
         <MapViewer
           geojson={geojson}
           center={center}
