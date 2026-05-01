@@ -41,7 +41,7 @@ export default async function Home({
   const { center, zoom } = computeInitialView(geojson, selected.focusEntity);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6">
+    <div className="flex h-screen flex-col gap-4 overflow-hidden p-6">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

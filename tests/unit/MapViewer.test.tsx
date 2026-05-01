@@ -198,10 +198,10 @@ describe("MapPanel — layout", () => {
     expect(root.className).toContain("grid-cols-[65%_1fr]");
   });
 
-  it("map container has a fixed viewport height", () => {
+  it("map container fills available height", () => {
     const { container } = render(<MapPanel geojson={fixture} />);
     const mapContainer = container.querySelector("[data-testid='composable-map']")!
-      .closest("[class*='h-']");
+      .closest("[class*='min-h-0']");
     expect(mapContainer).not.toBeNull();
   });
 });

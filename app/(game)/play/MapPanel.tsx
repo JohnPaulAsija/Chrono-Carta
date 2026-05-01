@@ -66,8 +66,8 @@ export function MapPanel({
   }, []);
 
   return (
-    <div className="grid grid-cols-[65%_1fr] gap-4">
-      <div className="relative h-[45vh]">
+    <div className="grid min-h-0 flex-1 grid-cols-[65%_1fr] gap-4">
+      <div className="relative min-h-0">
         <MapViewer
           geojson={geojson}
           center={center}
@@ -82,7 +82,7 @@ export function MapPanel({
           onReset={handleReset}
         />
       </div>
-      <div className="h-[45vh] overflow-y-auto">
+      <div className="min-h-0 overflow-y-auto">
         <Legend
           entities={geojson.features}
           highlightedEntity={highlightedEntity}
