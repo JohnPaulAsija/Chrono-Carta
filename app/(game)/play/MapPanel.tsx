@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { area } from "@turf/area";
+import { bbox } from "@turf/bbox";
 import { MapViewer } from "./MapViewer";
 import { Legend } from "./Legend";
 import { ZoomControls } from "./ZoomControls";
@@ -63,6 +64,19 @@ export function MapPanel({
     setZoom(initialZoom);
   }, [initialCenter, initialZoom]);
 
+  const handleSelect = useCallback((feature: MapFeature) => {
+    const [minLng, minLat, maxLng, maxLat] = bbox(feature);
+    const centerLng = (minLng + maxLng) / 2;
+    const centerLat = (minLat + maxLat) / 2;
+    setCenter([centerLng, centerLat]);
+
+    const spanLng = maxLng - minLng;
+    const spanLat = maxLat - minLat;
+    const span = Math.max(spanLng, spanLat, 1);
+    const fitZoom = Math.min(Math.max(Math.round(180 / span), MIN_ZOOM), MAX_ZOOM);
+    setZoom(fitZoom);
+  }, []);
+
   return (
     <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <div className="relative aspect-[4/3]">
@@ -85,6 +99,7 @@ export function MapPanel({
           entities={small}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
+          onSelect={handleSelect}
         />
       </div>
     </div>

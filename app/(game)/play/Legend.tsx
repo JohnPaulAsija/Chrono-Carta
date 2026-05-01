@@ -6,9 +6,10 @@ export interface LegendProps {
   entities: MapFeature[];
   highlightedEntity: string | null;
   onHighlight: (name: string | null) => void;
+  onSelect?: (feature: MapFeature) => void;
 }
 
-export function Legend({ entities, highlightedEntity, onHighlight }: LegendProps) {
+export function Legend({ entities, highlightedEntity, onHighlight, onSelect }: LegendProps) {
   return (
     <aside role="complementary" className="space-y-1 p-2">
       <h3 className="text-sm font-semibold">Entities</h3>
@@ -23,6 +24,7 @@ export function Legend({ entities, highlightedEntity, onHighlight }: LegendProps
               className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-gray-100"
               onMouseEnter={() => onHighlight(name)}
               onMouseLeave={() => onHighlight(null)}
+              onClick={() => onSelect?.(feature)}
             >
               <span
                 className="inline-block h-3 w-3 rounded-sm"

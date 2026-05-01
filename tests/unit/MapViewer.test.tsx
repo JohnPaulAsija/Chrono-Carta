@@ -121,6 +121,19 @@ describe("MapPanel — legend", () => {
     expect(path.getAttribute("data-highlighted")).toBe("true");
   });
 
+  it("clicking a legend item zooms the map to that entity", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<MapPanel geojson={fixture} />);
+    const legend = screen.getByRole("complementary");
+    const item = within(legend).getByText("Dalmatia");
+
+    await user.click(item);
+
+    const zoomGroup = container.querySelector("[data-testid='zoomable-group']")!;
+    const zoom = Number(zoomGroup.getAttribute("data-zoom"));
+    expect(zoom).toBeGreaterThan(1);
+  });
+
   it("hovering a polygon highlights the corresponding legend item", async () => {
     const user = userEvent.setup();
     const { container } = render(
