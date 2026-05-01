@@ -4,22 +4,42 @@
 
 ## Live demo
 
-> *TODO: live demo url* — will be filled in once Firebase App Hosting is wired up (plan Phase 4).
+<https://chrono-carta--chrono-carta.us-east4.hosted.app/>
+
+The pre-launch backend is deployed to Firebase App Hosting (see [apphosting.yaml](apphosting.yaml)). The curator and gameplay flows aren't complete yet, so the deployed surface only reflects the slices that have shipped (admin login, map viewer).
 
 ## Screenshots
 
-> *Screenshots will be added once the first end-to-end gameplay slice lands (plan Phase 5+). Until then there's nothing visual to capture.*
+> *To come.* The map viewer renders end to end (Phase 7), but the surrounding curator and gameplay screens are still being built. Screenshots will land alongside the first complete gameplay slice.
 
 ## Setup
 
-> *This section is a stub until the Next.js scaffold lands in Phase 1 of [the bootstrap plan](docs/plans/2026-04-29-project-bootstrap.md). It is not broken — there's just no app to run yet.*
-
-Prerequisites (planned):
+Prerequisites:
 - Node.js (LTS)
-- [Supabase CLI](https://supabase.com/docs/guides/cli) for migrations
-- A Supabase project — see `.env.example` for the variables you'll need
+- A Supabase project (or access to the existing pre-launch project) — see `.env.example` for the variables you'll need
+- [Supabase CLI](https://supabase.com/docs/guides/cli), only if you're authoring migrations
 
-Once the app exists, the canonical commands will be `npm run dev`, `npm test`, and `npm run build`. Configuration lives in `.env.local` (gitignored); copy `.env.example` as a template.
+First-time setup:
+
+```bash
+npm install
+cp .env.example .env.local      # fill in the Supabase keys + GAME_STATE_SECRET
+npm run data:fetch              # downloads the Cliopatria geojson into public/data/ (~180 MB)
+```
+
+Day-to-day commands:
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Next.js dev server |
+| `npm run build` | Production build |
+| `npm test` | All Jest projects (unit + integration) |
+| `npm run test:unit` | Unit + component tests only |
+| `npm run test:integration` | Integration suite — needs `SUPABASE_TEST_*` vars pointing at the TEST Supabase branch |
+| `npm run test:e2e` | Playwright end-to-end suite |
+| `npm run lint` | ESLint |
+
+The integration suite hits a real Supabase database (the `TEST` branch of the pre-launch project), so it stays skipped locally unless you've set the `SUPABASE_TEST_*` and `TEST_*_PASSWORD` variables in `.env.local`. CI runs it on every push.
 
 ## Architecture
 
