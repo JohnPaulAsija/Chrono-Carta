@@ -7,6 +7,7 @@ import {
   createCoordinates,
   Geographies,
   Geography,
+  Marker,
   Sphere,
   ZoomableGroup,
 } from "@vnedyalk0v/react19-simple-maps";
@@ -69,16 +70,18 @@ export function MapViewer({
             const c = centroid(feature);
             const [lng, lat] = c.geometry.coordinates;
             return (
-              <text
+              <Marker
                 key={`label-${feature.properties.Name}`}
-                data-label={feature.properties.Name}
-                x={lng}
-                y={lat}
-                textAnchor="middle"
-                className="pointer-events-none fill-current text-xs font-medium"
+                coordinates={createCoordinates(lng!, lat!)}
               >
-                {feature.properties.Name}
-              </text>
+                <text
+                  data-label={feature.properties.Name}
+                  textAnchor="middle"
+                  className="pointer-events-none fill-current text-xs font-medium"
+                >
+                  {feature.properties.Name}
+                </text>
+              </Marker>
             );
           })}
         </ZoomableGroup>
