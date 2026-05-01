@@ -37,7 +37,7 @@ export function MapPanel({ geojson, centerLat, centerLng, zoom }: MapPanelProps)
     null,
   );
 
-  const { small } = useMemo(
+  const { large, small } = useMemo(
     () => partitionByArea(geojson.features as Feature<Geometry>[]),
     [geojson.features],
   );
@@ -52,6 +52,7 @@ export function MapPanel({ geojson, centerLat, centerLng, zoom }: MapPanelProps)
           zoom={zoom}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
+          labeledEntities={large}
         />
       </div>
       <div className="flex-1">

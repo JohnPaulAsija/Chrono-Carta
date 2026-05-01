@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { FeatureCollection } from "geojson";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
+import * as turf from "@turf/turf";
 import {
   ComposableMap,
   Geographies,
@@ -15,12 +16,14 @@ export interface MapViewerProps {
   zoom: number;
   highlightedEntity?: string | null;
   onHighlight?: (name: string | null) => void;
+  labeledEntities?: Feature<Geometry>[];
 }
 
 export function MapViewer({
   geojson,
   highlightedEntity: controlledHighlight,
   onHighlight,
+  labeledEntities,
 }: MapViewerProps) {
   const [internalHighlight, setInternalHighlight] = useState<string | null>(
     null,
@@ -52,6 +55,23 @@ export function MapViewer({
             ))
           }
         </Geographies>
+        {labeledEntities?.map((feature) => {
+          const name = feature.properties?.Name as string;
+          const centroid = turf.centroid(feature);
+          const [lng, lat] = centroid.geometry.coordinates;
+          return (
+            <text
+              key={`label-${name}`}
+              data-label={name}
+              x={lng}
+              y={lat}
+              textAnchor="middle"
+              className="pointer-events-none fill-current text-xs font-medium"
+            >
+              {name}
+            </text>
+          );
+        })}
       </ComposableMap>
       {highlightedEntity && (
         <div

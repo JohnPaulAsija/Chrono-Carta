@@ -50,6 +50,33 @@ describe("MapViewer", () => {
   });
 });
 
+describe("MapPanel — permanent labels", () => {
+  it("shows a label for entities above the area threshold", () => {
+    const { container } = render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const labels = container.querySelectorAll("text[data-label]");
+    const labelNames = Array.from(labels).map((el) =>
+      el.getAttribute("data-label"),
+    );
+    expect(labelNames).toContain("Arcadia");
+    expect(labelNames).toContain("Bohemia");
+    expect(labelNames).toContain("Cascadia");
+  });
+
+  it("does not show a label for entities below the area threshold", () => {
+    const { container } = render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const labels = container.querySelectorAll("text[data-label]");
+    const labelNames = Array.from(labels).map((el) =>
+      el.getAttribute("data-label"),
+    );
+    expect(labelNames).not.toContain("Dalmatia");
+    expect(labelNames).not.toContain("Elysia");
+  });
+});
+
 describe("MapPanel — legend", () => {
   it("legend lists entities below the area threshold", () => {
     render(
