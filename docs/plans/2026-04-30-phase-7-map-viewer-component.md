@@ -6,7 +6,7 @@
 
 **Architecture:** Per architecture §Map Viewer. Built on `react19-simple-maps` with a `Geographies` + `Geography` layout, custom centroid label rendering above a polygon-area threshold, hover state lifted to a `highlightedEntity` parent piece of state. Legend is a sibling component that reads/writes the same state. Layout is map-on-left / legend-on-right desktop, stacked on tablet.
 
-**Tech Stack:** `react19-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests. `@types/geojson` is already a devDep from Phase 6 — import named types from `"geojson"` (e.g. `import type { FeatureCollection } from "geojson"`) rather than relying on the global `GeoJSON` namespace, which doesn't auto-globalize under our `module: esnext` / `moduleResolution: bundler` config.
+**Tech Stack:** `@vnedyalk0v/react19-simple-maps`, `@turf/turf` (centroid + area calculations on rendered polygons), Tailwind for layout, Jest + RTL for component tests. `@types/geojson` is already a devDep from Phase 6 — import named types from `"geojson"` (e.g. `import type { FeatureCollection } from "geojson"`) rather than relying on the global `GeoJSON` namespace, which doesn't auto-globalize under our `module: esnext` / `moduleResolution: bundler` config.
 
 **Why the fork over upstream `react-simple-maps`.** Upstream (`@3.0.0`, last released 2023) declares `react@^16/17/18` peer deps and is effectively unmaintained — installing it under our React 19.2.4 / Next 16 stack requires `--legacy-peer-deps` or an override. `react19-simple-maps` is a maintained fork with proper React 19 peer deps, ESM/CJS/UMD builds (a recent fork release patched a Turbopack-incompatible UMD export), bundled TypeScript types (no separate `@types/` package needed), and the same `ComposableMap` / `Geographies` / `Geography` / `ZoomableGroup` API surface.
 
@@ -23,7 +23,7 @@ This task doubles as the compatibility spike for the fork — confirm it install
 The fork ships its own TypeScript types — no separate `@types/` devDep.
 
 ```
-npm i react19-simple-maps
+npm i @vnedyalk0v/react19-simple-maps
 ```
 
 Spike checks:
@@ -92,7 +92,7 @@ describe("MapViewer", () => {
 "use client";
 
 import type { FeatureCollection } from "geojson";
-import { ComposableMap, Geographies, Geography } from "react19-simple-maps";
+import { ComposableMap, Geographies, Geography } from "@vnedyalk0v/react19-simple-maps";
 
 export interface MapViewerProps {
   geojson: FeatureCollection;

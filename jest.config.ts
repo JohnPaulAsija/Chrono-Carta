@@ -28,6 +28,8 @@ const config: Config = {
         ],
       },
       moduleNameMapper: {
+        "^@vnedyalk0v/react19-simple-maps$":
+          "<rootDir>/tests/__mocks__/react19-simple-maps.tsx",
         "^@/(.*)$": "<rootDir>/$1",
       },
     },

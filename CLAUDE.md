@@ -17,7 +17,7 @@ A browser-based educational game in the style of GeoGuessr: players see a render
 - **Next.js App Router** with React Server Components and Server Actions
 - **Supabase Postgres** for map metadata (including pre-filtered GeoJSON in `jsonb`), users, roles
 - **Supabase Auth** for curator/admin login (no self-registration in v1 — disable sign-ups in Supabase settings)
-- **`react19-simple-maps`** (React 19-compatible fork of `react-simple-maps`) for GeoJSON polygon rendering
+- **`@vnedyalk0v/react19-simple-maps`** (React 19-compatible fork of `react-simple-maps`) for GeoJSON polygon rendering
 - **Firebase App Hosting** (Cloud Run) for deploy; secrets in Cloud Secret Manager
 - **Jest + React Testing Library** for unit/component tests; **Playwright** for E2E; integration tests run against a dedicated Supabase test project
 
