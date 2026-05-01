@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MapViewer } from "../../app/(game)/play/MapViewer";
+import { MapPanel } from "../../app/(game)/play/MapPanel";
 import fixture from "../fixtures/map-fixture.json";
 
 describe("MapViewer", () => {
@@ -46,5 +47,54 @@ describe("MapViewer", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
     await user.unhover(path);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+});
+
+describe("MapPanel — legend", () => {
+  it("legend lists entities below the area threshold", () => {
+    render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const legend = screen.getByRole("complementary");
+    expect(within(legend).getByText("Dalmatia")).toBeInTheDocument();
+    expect(within(legend).getByText("Elysia")).toBeInTheDocument();
+  });
+
+  it("legend does not list entities above the area threshold", () => {
+    render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const legend = screen.getByRole("complementary");
+    expect(within(legend).queryByText("Arcadia")).not.toBeInTheDocument();
+    expect(within(legend).queryByText("Bohemia")).not.toBeInTheDocument();
+    expect(within(legend).queryByText("Cascadia")).not.toBeInTheDocument();
+  });
+
+  it("hovering a legend item highlights the corresponding polygon", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const legend = screen.getByRole("complementary");
+    const item = within(legend).getByText("Dalmatia");
+    await user.hover(item);
+    const path = container.querySelector(
+      'path[data-entity-name="Dalmatia"]',
+    )!;
+    expect(path.getAttribute("data-highlighted")).toBe("true");
+  });
+
+  it("hovering a polygon highlights the corresponding legend item", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <MapPanel geojson={fixture} centerLat={0} centerLng={0} zoom={1} />,
+    );
+    const path = container.querySelector(
+      'path[data-entity-name="Dalmatia"]',
+    )!;
+    await user.hover(path);
+    const legend = screen.getByRole("complementary");
+    const item = within(legend).getByText("Dalmatia");
+    expect(item.closest("[data-highlighted]")?.getAttribute("data-highlighted")).toBe("true");
   });
 });

@@ -13,12 +13,20 @@ export interface MapViewerProps {
   centerLat: number;
   centerLng: number;
   zoom: number;
+  highlightedEntity?: string | null;
+  onHighlight?: (name: string | null) => void;
 }
 
-export function MapViewer({ geojson }: MapViewerProps) {
-  const [highlightedEntity, setHighlightedEntity] = useState<string | null>(
+export function MapViewer({
+  geojson,
+  highlightedEntity: controlledHighlight,
+  onHighlight,
+}: MapViewerProps) {
+  const [internalHighlight, setInternalHighlight] = useState<string | null>(
     null,
   );
+  const highlightedEntity = controlledHighlight ?? internalHighlight;
+  const setHighlightedEntity = onHighlight ?? setInternalHighlight;
 
   return (
     <div className="relative">
@@ -30,6 +38,11 @@ export function MapViewer({ geojson }: MapViewerProps) {
                 key={geo.properties?.Name ?? String(i)}
                 geography={geo}
                 data-entity-name={geo.properties?.Name}
+                data-highlighted={
+                  highlightedEntity === geo.properties?.Name
+                    ? "true"
+                    : undefined
+                }
                 fill={geo.properties?.color}
                 onMouseEnter={() =>
                   setHighlightedEntity(geo.properties?.Name ?? null)
