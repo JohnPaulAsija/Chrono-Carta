@@ -7,6 +7,7 @@ import {
   createCoordinates,
   Geographies,
   Geography,
+  Sphere,
   ZoomableGroup,
 } from "@vnedyalk0v/react19-simple-maps";
 import type { MapFeature, MapFeatureCollection } from "./types";
@@ -37,6 +38,7 @@ export function MapViewer({
   return (
     <div className="relative">
       <ComposableMap projection="geoEqualEarth">
+        <Sphere fill="#a8d5e2" stroke="#ccc" />
         <ZoomableGroup
           center={center ? createCoordinates(center[0], center[1]) : undefined}
           zoom={zoom}

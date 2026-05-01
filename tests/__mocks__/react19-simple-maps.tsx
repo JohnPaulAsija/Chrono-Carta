@@ -51,6 +51,10 @@ export function createCoordinates(lon: number, lat: number): [number, number] {
   return [lon, lat];
 }
 
+export function Sphere(props: { [key: string]: unknown }) {
+  return <circle data-testid="sphere" r="100" {...props} />;
+}
+
 export function ZoomableGroup({
   children,
   ...rest

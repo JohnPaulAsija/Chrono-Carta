@@ -38,6 +38,13 @@ describe("MapViewer", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("Arcadia");
   });
 
+  it("renders an ocean background", () => {
+    const { container } = render(<MapViewer geojson={fixture} />);
+    const sphere = container.querySelector("[data-testid='sphere']");
+    expect(sphere).not.toBeNull();
+    expect(sphere?.getAttribute("fill")).toBe("#a8d5e2");
+  });
+
   it("hides the tooltip on mouse leave", async () => {
     const user = userEvent.setup();
     const { container } = render(
