@@ -15,7 +15,9 @@ export async function getColoredMapForYear(
   if (cached) return cached;
 
   const dataset = await loadCliopatria();
-  const filtered = filterByYear(dataset.features, year);
+  const filtered = filterByYear(dataset.features, year).filter(
+    (f) => !f.properties.Name.startsWith("("),
+  );
   const stripped = stripYearData(filtered);
   const colored = assignColors(stripped);
 
