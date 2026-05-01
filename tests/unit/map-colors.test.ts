@@ -1,4 +1,5 @@
 import {
+  assignColors,
   computeAdjacency,
   generateDistinctColors,
   hexToHsl,
@@ -83,5 +84,104 @@ describe("generateDistinctColors", () => {
 
   it("returns an empty array for n=0", () => {
     expect(generateDistinctColors(0)).toEqual([]);
+  });
+});
+
+function familySquare(
+  name: string,
+  originX: number,
+  originY: number,
+  memberOf?: string,
+): StrippedFeature {
+  const base = square(name, originX, originY);
+  if (memberOf !== undefined) {
+    base.properties = { ...base.properties, MemberOf: memberOf };
+  }
+  return base;
+}
+
+function hueGap(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
+}
+
+describe("assignColors", () => {
+  it("annotates every feature with a hex color property", () => {
+    const colored = assignColors([square("A", 0, 0), square("B", 5, 5)]);
+    for (const f of colored) {
+      expect((f.properties as { color?: string }).color).toMatch(
+        /^#[0-9a-f]{6}$/,
+      );
+    }
+  });
+
+  it("assigns no adjacent pair the same color when palette has capacity", () => {
+    const colored = assignColors([
+      square("A", 0, 0),
+      square("B", 1, 0),
+      square("C", 2, 0),
+      square("D", 3, 0),
+    ]);
+    const byName = new Map(
+      colored.map((f) => [
+        f.properties.Name,
+        (f.properties as { color: string }).color,
+      ]),
+    );
+    expect(byName.get("A")).not.toBe(byName.get("B"));
+    expect(byName.get("B")).not.toBe(byName.get("C"));
+    expect(byName.get("C")).not.toBe(byName.get("D"));
+  });
+
+  it("places same-family non-adjacent members in the same hue family", () => {
+    const colored = assignColors([
+      familySquare("Bavaria", 0, 0, "HRE"),
+      familySquare("Saxony", 5, 5, "HRE"),
+      familySquare("Prussia", 10, 10, "HRE"),
+    ]);
+    const hues = colored.map(
+      (f) => hexToHsl((f.properties as { color: string }).color).h,
+    );
+    let maxGap = 0;
+    for (let i = 0; i < hues.length; i++) {
+      for (let j = i + 1; j < hues.length; j++) {
+        const g = hueGap(hues[i]!, hues[j]!);
+        if (g > maxGap) maxGap = g;
+      }
+    }
+    expect(maxGap).toBeLessThan(2);
+  });
+
+  it("differentiates same-family adjacent members via lightness", () => {
+    const colored = assignColors([
+      familySquare("Bavaria", 0, 0, "HRE"),
+      familySquare("Saxony", 1, 0, "HRE"),
+    ]);
+    const hsls = colored.map((f) =>
+      hexToHsl((f.properties as { color: string }).color),
+    );
+    expect(hueGap(hsls[0]!.h, hsls[1]!.h)).toBeLessThan(2);
+    expect(Math.abs(hsls[0]!.l - hsls[1]!.l)).toBeGreaterThan(8);
+    expect(hsls[0]).not.toEqual(hsls[1]);
+  });
+
+  it("treats features without MemberOf as singleton groups", () => {
+    const colored = assignColors([
+      square("X", 0, 0),
+      square("Y", 10, 10),
+    ]);
+    const hx = hexToHsl((colored[0]!.properties as { color: string }).color).h;
+    const hy = hexToHsl((colored[1]!.properties as { color: string }).color).h;
+    expect(hueGap(hx, hy)).toBeGreaterThan(20);
+  });
+
+  it("treats empty-string MemberOf as a singleton, not a shared family", () => {
+    const colored = assignColors([
+      familySquare("X", 0, 0, ""),
+      familySquare("Y", 10, 10, ""),
+    ]);
+    const hx = hexToHsl((colored[0]!.properties as { color: string }).color).h;
+    const hy = hexToHsl((colored[1]!.properties as { color: string }).color).h;
+    expect(hueGap(hx, hy)).toBeGreaterThan(20);
   });
 });

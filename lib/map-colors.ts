@@ -58,6 +58,103 @@ export function hexToHsl(hex: string): Hsl {
   return { h, s: s * 100, l: l * 100 };
 }
 
+function groupKey(f: StrippedFeature): string {
+  const m = f.properties.MemberOf?.trim();
+  return m ? `family:${m}` : `solo:${f.properties.Name}`;
+}
+
+function generateLightnessVariants(baseHex: string, k: number): string[] {
+  const { h, s } = hexToHsl(baseHex);
+  if (k === 1) return [baseHex];
+  const out: string[] = [];
+  for (let i = 0; i < k; i++) {
+    const l = 35 + (i * 35) / (k - 1);
+    out.push(hslToHex({ h, s, l }));
+  }
+  return out;
+}
+
+function hueDistance(a: string, b: string): number {
+  const ha = hexToHsl(a).h;
+  const hb = hexToHsl(b).h;
+  const d = Math.abs(ha - hb) % 360;
+  return Math.min(d, 360 - d);
+}
+
+export interface ColoredFeature extends StrippedFeature {
+  properties: StrippedFeature["properties"] & { color: string };
+}
+
+export function assignColors(features: StrippedFeature[]): ColoredFeature[] {
+  const adj = computeAdjacency(features);
+
+  const groups = new Map<string, StrippedFeature[]>();
+  for (const f of features) {
+    const k = groupKey(f);
+    let bucket = groups.get(k);
+    if (!bucket) {
+      bucket = [];
+      groups.set(k, bucket);
+    }
+    bucket.push(f);
+  }
+
+  const groupKeys = Array.from(groups.keys()).sort();
+  const baseHues = generateDistinctColors(groupKeys.length);
+
+  const groupPool = new Map<string, string[]>();
+  for (let i = 0; i < groupKeys.length; i++) {
+    const k = groupKeys[i]!;
+    const base = baseHues[i]!;
+    const size = groups.get(k)!.length;
+    groupPool.set(k, generateLightnessVariants(base, size));
+  }
+
+  const assigned = new Map<string, string>();
+  const order = features
+    .slice()
+    .sort(
+      (a, b) =>
+        adj.get(b.properties.Name)!.size - adj.get(a.properties.Name)!.size,
+    );
+
+  for (const f of order) {
+    const name = f.properties.Name;
+    const key = groupKey(f);
+    const usedByNeighbors = new Set<string>();
+    for (const n of adj.get(name)!) {
+      const c = assigned.get(n);
+      if (c) usedByNeighbors.add(c);
+    }
+
+    const preferred = groupPool.get(key)!;
+    let pick = preferred.find((c) => !usedByNeighbors.has(c));
+
+    if (!pick) {
+      const familyBase = preferred[0]!;
+      const fallback = groupKeys
+        .filter((gk) => gk !== key)
+        .flatMap((gk) => groupPool.get(gk)!)
+        .sort((a, b) => hueDistance(familyBase, a) - hueDistance(familyBase, b));
+      pick = fallback.find((c) => !usedByNeighbors.has(c));
+    }
+
+    if (!pick) {
+      throw new Error(
+        `[map-colors] invariant violated: no free color for "${name}" ` +
+          `(neighbors=${adj.get(name)!.size}, pool=${features.length})`,
+      );
+    }
+
+    assigned.set(name, pick);
+  }
+
+  return features.map((f) => ({
+    ...f,
+    properties: { ...f.properties, color: assigned.get(f.properties.Name)! },
+  }));
+}
+
 export function hslToHex({ h, s, l }: Hsl): string {
   const sNorm = s / 100;
   const lNorm = l / 100;
