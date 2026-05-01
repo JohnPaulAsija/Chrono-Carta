@@ -1,9 +1,17 @@
+import { existsSync } from "node:fs";
+
 import {
   assignColors,
   computeAdjacency,
   generateDistinctColors,
   hexToHsl,
 } from "@/lib/map-colors";
+import {
+  _resetCliopatriaCache,
+  filterByYear,
+  loadCliopatria,
+  stripYearData,
+} from "@/lib/cliopatria";
 import type { StrippedFeature } from "@/lib/cliopatria";
 
 function square(name: string, originX: number, originY: number): StrippedFeature {
@@ -184,4 +192,39 @@ describe("assignColors", () => {
     const hy = hexToHsl((colored[1]!.properties as { color: string }).color).h;
     expect(hueGap(hx, hy)).toBeGreaterThan(20);
   });
+});
+
+const REAL_DATASET = "public/data/cliopatria-0.0.1/cliopatria.geojson";
+const describeWithReal = existsSync(REAL_DATASET) ? describe : describe.skip;
+
+describeWithReal("assignColors on real Cliopatria filtered to 1815", () => {
+  beforeAll(() => _resetCliopatriaCache());
+
+  it("annotates every feature with a unique-from-neighbors color", async () => {
+    const fc = await loadCliopatria();
+    const filtered = filterByYear(fc.features, 1815);
+    const stripped = stripYearData(filtered);
+    const colored = assignColors(stripped);
+
+    for (const f of colored) {
+      expect((f.properties as { color: string }).color).toMatch(
+        /^#[0-9a-f]{6}$/,
+      );
+    }
+
+    const adj = computeAdjacency(colored);
+    const colorByName = new Map(
+      colored.map((f) => [
+        f.properties.Name,
+        (f.properties as { color: string }).color,
+      ]),
+    );
+    for (const [name, neighbors] of adj) {
+      for (const n of neighbors) {
+        if (name < n) {
+          expect(colorByName.get(name)).not.toBe(colorByName.get(n));
+        }
+      }
+    }
+  }, 30000);
 });
