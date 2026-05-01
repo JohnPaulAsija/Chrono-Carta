@@ -47,6 +47,10 @@ export function Geography({
   return <path {...rest} />;
 }
 
+export function createCoordinates(lon: number, lat: number): [number, number] {
+  return [lon, lat];
+}
+
 export function ZoomableGroup({
   children,
   ...rest

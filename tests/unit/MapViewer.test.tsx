@@ -128,3 +128,53 @@ describe("MapPanel — legend", () => {
     expect(item.closest("[data-highlighted]")?.getAttribute("data-highlighted")).toBe("true");
   });
 });
+
+describe("MapPanel — zoom controls", () => {
+  it("renders zoom in, zoom out, and reset buttons", () => {
+    render(<MapPanel geojson={fixture} />);
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset view" })).toBeInTheDocument();
+  });
+
+  it("clicking zoom in increases the zoom level", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<MapPanel geojson={fixture} />);
+    const zoomGroup = container.querySelector("[data-testid='zoomable-group']")!;
+    const initialZoom = zoomGroup.getAttribute("data-zoom");
+
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+
+    const newZoom = zoomGroup.getAttribute("data-zoom");
+    expect(Number(newZoom)).toBeGreaterThan(Number(initialZoom));
+  });
+
+  it("clicking zoom out decreases the zoom level", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<MapPanel geojson={fixture} />);
+
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    const zoomGroup = container.querySelector("[data-testid='zoomable-group']")!;
+    const zoomedIn = Number(zoomGroup.getAttribute("data-zoom"));
+
+    await user.click(screen.getByRole("button", { name: "Zoom out" }));
+    const zoomedOut = Number(zoomGroup.getAttribute("data-zoom"));
+
+    expect(zoomedOut).toBeLessThan(zoomedIn);
+  });
+
+  it("clicking reset returns to initial zoom", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<MapPanel geojson={fixture} />);
+    const zoomGroup = container.querySelector("[data-testid='zoomable-group']")!;
+    const initialZoom = zoomGroup.getAttribute("data-zoom");
+
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    await user.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(zoomGroup.getAttribute("data-zoom")).not.toBe(initialZoom);
+
+    await user.click(screen.getByRole("button", { name: "Reset view" }));
+    expect(zoomGroup.getAttribute("data-zoom")).toBe(initialZoom);
+  });
+});

@@ -1,16 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { area } from "@turf/area";
 import { MapViewer } from "./MapViewer";
 import { Legend } from "./Legend";
+import { ZoomControls } from "./ZoomControls";
 import type { MapFeature, MapFeatureCollection } from "./types";
 
 export interface MapPanelProps {
   geojson: MapFeatureCollection;
+  initialCenter?: [number, number];
+  initialZoom?: number;
 }
 
 const LABEL_AREA_THRESHOLD = 5e10;
+const ZOOM_STEP = 2;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 32;
 
 function partitionByArea(features: MapFeature[]): {
   large: MapFeature[];
@@ -28,24 +34,50 @@ function partitionByArea(features: MapFeature[]): {
   return { large, small };
 }
 
-export function MapPanel({ geojson }: MapPanelProps) {
+export function MapPanel({
+  geojson,
+  initialCenter = [0, 0],
+  initialZoom = 1,
+}: MapPanelProps) {
   const [highlightedEntity, setHighlightedEntity] = useState<string | null>(
     null,
   );
+  const [center, setCenter] = useState<[number, number]>(initialCenter);
+  const [zoom, setZoom] = useState(initialZoom);
 
   const { large, small } = useMemo(
     () => partitionByArea(geojson.features),
     [geojson.features],
   );
 
+  const handleZoomIn = useCallback(
+    () => setZoom((z) => Math.min(z * ZOOM_STEP, MAX_ZOOM)),
+    [],
+  );
+  const handleZoomOut = useCallback(
+    () => setZoom((z) => Math.max(z / ZOOM_STEP, MIN_ZOOM)),
+    [],
+  );
+  const handleReset = useCallback(() => {
+    setCenter(initialCenter);
+    setZoom(initialZoom);
+  }, [initialCenter, initialZoom]);
+
   return (
     <div className="flex gap-4">
-      <div className="flex-[2]">
+      <div className="relative flex-[2]">
         <MapViewer
           geojson={geojson}
+          center={center}
+          zoom={zoom}
           highlightedEntity={highlightedEntity}
           onHighlight={setHighlightedEntity}
           labeledEntities={large}
+        />
+        <ZoomControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onReset={handleReset}
         />
       </div>
       <div className="flex-1">
