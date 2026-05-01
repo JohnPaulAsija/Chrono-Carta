@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace the default Next.js landing page with an interactive demo of the existing map viewer, gated by a small dropdown of three curated historical years (AD 117, AD 1812, AD 1919), so the project has something visually demonstrable while the v1 game flow is still in development.
+**Goal:** Replace the default Next.js landing page with an interactive demo of the existing map viewer, gated by a small dropdown of five curated historical years (AD 117, AD 1200, AD 1648, AD 1812, AD 1919), so the project has something visually demonstrable while the v1 game flow is still in development. AD 1200 and AD 1648 are included specifically to showcase the `MemberOf`-based color-family assignment under the Holy Roman Empire — 1200 for the Hohenstaufen-era major-duchy structure, 1648 for the post-Westphalia patchwork.
 
 **Architecture:** Server Component reads `?year=<value>` from `searchParams`, loads/filters/strips/colors the Cliopatria dataset on the server, and renders the existing `MapPanel` client component. A small `<YearPicker>` client component updates the URL via `router.push`, triggering server re-render with the cached dataset (subsequent renders are fast — only first hit pays the ~180 MB JSON parse cost). No new dependencies; all data utilities and rendering primitives already exist.
 
@@ -31,8 +31,8 @@
 import { DEMO_YEARS, findDemoYear, DEFAULT_DEMO_YEAR } from "../../lib/demo-years";
 
 describe("demo-years", () => {
-  it("exposes exactly the three curated years in chronological order", () => {
-    expect(DEMO_YEARS.map((d) => d.year)).toEqual([117, 1812, 1919]);
+  it("exposes exactly the five curated years in chronological order", () => {
+    expect(DEMO_YEARS.map((d) => d.year)).toEqual([117, 1200, 1648, 1812, 1919]);
   });
 
   it("each entry has a non-empty label and caption", () => {
@@ -83,6 +83,20 @@ export const DEMO_YEARS: readonly DemoYear[] = [
     year: 117,
     label: "AD 117 — Height of Rome",
     caption: "The Roman Empire at its greatest extent under Trajan.",
+  },
+  {
+    value: "1200",
+    year: 1200,
+    label: "AD 1200 — Hohenstaufen Holy Roman Empire",
+    caption:
+      "The HRE at its medieval peak under Henry VI — major duchies grouped as one color family.",
+  },
+  {
+    value: "1648",
+    year: 1648,
+    label: "AD 1648 — HRE after Westphalia",
+    caption:
+      "The Holy Roman Empire's post-Westphalia patchwork — hundreds of states sharing a color family.",
   },
   {
     value: "1812",
@@ -342,33 +356,51 @@ Wait for `Ready in <ms>` line.
   - Header reads "ChronoCarta — Demo".
   - Caption mentions Trajan.
   - Map renders a coloured Roman empire across the Mediterranean.
-  - Dropdown shows the three options, with "AD 117 — Height of Rome" selected.
+  - Dropdown shows all five options, with "AD 117 — Height of Rome" selected.
   - DevTools → Network → the page document response: GeoJSON features only carry `Name`, optional `MemberOf`, `color`, and `geometry`. No `FromYear`/`ToYear`/`Wikipedia`/etc. (Per architecture invariant 2.)
 
-**Step 3: Switch to AD 1812**
+**Step 3: Switch to AD 1200 — verify color families (primary acceptance criterion)**
+
+- Pick "AD 1200 — Hohenstaufen Holy Roman Empire".
+- URL updates to `/?year=1200`.
+- Confirm:
+  - The HRE's constituent duchies (Saxony, Bavaria, Swabia, etc., as encoded in Cliopatria) are rendered in **visibly related hues** — same hue family, varying lightness — distinct from neighbouring non-HRE polities (France, Hungary, Italian city-states outside the empire).
+  - Hover labels confirm the entities are HRE members.
+- If color families are *not* visible at 1200 (e.g., Cliopatria represents the empire as one polygon at this date), note the data-coverage gap as a follow-up but do not block the PR — the 1648 entry is the primary showcase.
+
+**Step 4: Switch to AD 1648 — verify color families (primary acceptance criterion)**
+
+- Pick "AD 1648 — HRE after Westphalia".
+- URL updates to `/?year=1648`.
+- Confirm:
+  - Central Europe shows a dense patchwork of small states, all rendered in a shared hue family with lightness variation — the visual signature of `assignColors`' `MemberOf` grouping.
+  - Adjacent HRE members never share an *identical* color (graph-coloring invariant).
+- This is the primary justification for the demo; failure here is a blocker.
+
+**Step 5: Switch to AD 1812**
 
 - Pick "AD 1812 — Height of Napoleon".
 - URL updates to `/?year=1812`.
 - Map re-renders with the Napoleonic configuration; caption changes.
 - Subsequent year switches feel snappy (cached dataset).
 
-**Step 4: Switch to AD 1919**
+**Step 6: Switch to AD 1919**
 
 - Pick "AD 1919 — Height of the British Empire".
 - URL updates to `/?year=1919`.
 - Map re-renders; the British Empire's territorial peak is visible (large pink/orange-toned coverage across continents).
 
-**Step 5: Defensive route check**
+**Step 7: Defensive route check**
 
 - Navigate to `http://localhost:3000/?year=junk`.
 - Expected: page falls back to AD 117 silently (the default).
 
-**Step 6: Mobile viewport**
+**Step 8: Mobile viewport**
 
 - DevTools → toggle device toolbar → 375 px width.
 - The page is **not** required to look good below 768 px (per architecture invariant 7), but verify the page does not crash. Out of scope to add a small-screen guard for the demo — the gameplay-route guard from later phases will cover this when the gameplay flow lands here.
 
-**Step 7: Stop the server (Ctrl+C) and commit nothing.** This task produces no code changes.
+**Step 9: Stop the server (Ctrl+C) and commit nothing.** This task produces no code changes.
 
 ---
 
@@ -385,7 +417,7 @@ Run: `npx grep -n "start screen\|landing\|root path\|/$" chrono-carta-architectu
 
 **Step 2: Add a short "Temporary state" note** near that section. Suggested wording:
 
-> **Temporary state (as of 2026-05-01):** Until the gameplay start screen lands, `app/(game)/page.tsx` renders a three-year demo of the map viewer (AD 117, AD 1812, AD 1919), driven by a `?year=` query param. See [docs/plans/2026-05-01-landing-demo-map.md](docs/plans/2026-05-01-landing-demo-map.md). This route will be replaced when the gameplay UI phase begins; the demo and `<YearPicker>` are expected to be deleted at that point — they are not a public surface to preserve.
+> **Temporary state (as of 2026-05-01):** Until the gameplay start screen lands, `app/(game)/page.tsx` renders a five-year demo of the map viewer (AD 117, AD 1200, AD 1648, AD 1812, AD 1919), driven by a `?year=` query param. See [docs/plans/2026-05-01-landing-demo-map.md](docs/plans/2026-05-01-landing-demo-map.md). This route will be replaced when the gameplay UI phase begins; the demo and `<YearPicker>` are expected to be deleted at that point — they are not a public surface to preserve.
 
 **Step 3: Add a follow-up entry** in the "Pending Follow-Ups" section of `CLAUDE.md`:
 
