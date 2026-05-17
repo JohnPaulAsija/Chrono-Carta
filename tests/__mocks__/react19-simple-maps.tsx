@@ -14,6 +14,7 @@ export function ComposableMap({
 export function Geographies({
   geography,
   children,
+  ...rest
 }: {
   geography: string | FeatureCollection;
   children: (props: {
@@ -21,11 +22,12 @@ export function Geographies({
     outline: string;
     borders: string;
   }) => React.ReactNode;
+  [key: string]: unknown;
 }) {
   const fc = typeof geography === "string" ? null : geography;
   if (!fc) return null;
   return (
-    <g data-testid="geographies">
+    <g data-testid="geographies" {...rest}>
       {children({
         geographies: fc.features,
         outline: "",
@@ -37,22 +39,34 @@ export function Geographies({
 
 export function Geography({
   geography: _geography,
-  style: _style,
+  style,
   ...rest
 }: {
   geography: Feature<Geometry>;
-  style?: unknown;
+  style?: { default?: { pointerEvents?: string } } | unknown;
   [key: string]: unknown;
 }) {
-  return <path {...rest} />;
+  const pointerEvents =
+    style &&
+    typeof style === "object" &&
+    "default" in style &&
+    style.default &&
+    typeof style.default === "object" &&
+    "pointerEvents" in style.default
+      ? (style.default as { pointerEvents?: string }).pointerEvents
+      : undefined;
+  return (
+    <path
+      {...rest}
+      {...(pointerEvents !== undefined
+        ? { "data-pointer-events": pointerEvents }
+        : {})}
+    />
+  );
 }
 
 export function createCoordinates(lon: number, lat: number): [number, number] {
   return [lon, lat];
-}
-
-export function Sphere(props: { [key: string]: unknown }) {
-  return <circle data-testid="sphere" r="100" {...props} />;
 }
 
 export function Marker({

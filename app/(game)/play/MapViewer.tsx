@@ -10,10 +10,20 @@ import {
   Geographies,
   Geography,
   Marker,
-  Sphere,
   ZoomableGroup,
 } from "@vnedyalk0v/react19-simple-maps";
+import { feature } from "topojson-client";
+import landTopology from "world-atlas/land-50m.json";
+import type { Topology, GeometryCollection } from "topojson-specification";
+import type { FeatureCollection } from "geojson";
 import type { MapFeature, MapFeatureCollection } from "./types";
+
+// `world-atlas/land-50m.json` ships untyped; `objects.land` is documented in its README.
+const LAND_FEATURES = feature(
+  landTopology as unknown as Topology<{ land: GeometryCollection }>,
+  (landTopology as unknown as Topology<{ land: GeometryCollection }>).objects
+    .land,
+) as FeatureCollection;
 
 export interface MapViewerProps {
   geojson: MapFeatureCollection;
@@ -45,7 +55,8 @@ export function MapViewer({
   return (
     <div
       ref={containerRef}
-      className="relative"
+      className="relative h-full"
+      style={{ backgroundColor: "#a8d5e2" }}
       onMouseMove={(e) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
@@ -59,8 +70,25 @@ export function MapViewer({
           zoom={zoom}
           data-zoom={zoom}
         >
-          <Sphere fill="#a8d5e2" stroke="#ccc" />
-          <Geographies geography={geojson}>
+          <Geographies geography={LAND_FEATURES} data-layer="basemap">
+            {({ geographies }) =>
+              geographies.map((geo, i) => (
+                <Geography
+                  key={`land-${i}`}
+                  geography={geo}
+                  fill="#e8e0c8"
+                  stroke="#a89f80"
+                  strokeWidth={0.5}
+                  style={{
+                    default: { outline: "none", pointerEvents: "none" },
+                    hover: { outline: "none", pointerEvents: "none" },
+                    pressed: { outline: "none", pointerEvents: "none" },
+                  }}
+                />
+              ))
+            }
+          </Geographies>
+          <Geographies geography={geojson} data-layer="political">
             {({ geographies }) =>
               (geographies as unknown as MapFeature[]).map((geo, i) => (
                 <Geography

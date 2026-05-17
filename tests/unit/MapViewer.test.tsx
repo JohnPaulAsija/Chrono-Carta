@@ -38,11 +38,47 @@ describe("MapViewer", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent("Arcadia");
   });
 
-  it("renders an ocean background", () => {
+  it("renders an ocean background on the map container", () => {
     const { container } = render(<MapViewer geojson={fixture} />);
-    const sphere = container.querySelector("[data-testid='sphere']");
-    expect(sphere).not.toBeNull();
-    expect(sphere?.getAttribute("fill")).toBe("#a8d5e2");
+    const mapContainer = container.firstElementChild as HTMLElement;
+    expect(mapContainer?.style.backgroundColor).toBe("rgb(168, 213, 226)");
+  });
+
+  it("renders a land basemap layer", () => {
+    const { container } = render(<MapViewer geojson={fixture} />);
+    const basemap = container.querySelector(
+      "[data-testid='geographies'][data-layer='basemap']",
+    );
+    expect(basemap).not.toBeNull();
+    const landPaths = basemap!.querySelectorAll("path");
+    expect(landPaths.length).toBeGreaterThan(0);
+  });
+
+  it("basemap land features are non-interactive (pointerEvents: none)", () => {
+    const { container } = render(<MapViewer geojson={fixture} />);
+    const basemap = container.querySelector(
+      "[data-testid='geographies'][data-layer='basemap']",
+    )!;
+    const landPaths = basemap.querySelectorAll("path");
+    landPaths.forEach((p) => {
+      expect(p.getAttribute("data-pointer-events")).toBe("none");
+    });
+  });
+
+  it("renders basemap layer before political layer in document order", () => {
+    const { container } = render(<MapViewer geojson={fixture} />);
+    const layers = Array.from(
+      container.querySelectorAll("[data-testid='geographies']"),
+    );
+    const basemapIndex = layers.findIndex(
+      (g) => g.getAttribute("data-layer") === "basemap",
+    );
+    const politicalIndex = layers.findIndex(
+      (g) => g.getAttribute("data-layer") === "political",
+    );
+    expect(basemapIndex).toBeGreaterThanOrEqual(0);
+    expect(politicalIndex).toBeGreaterThanOrEqual(0);
+    expect(basemapIndex).toBeLessThan(politicalIndex);
   });
 
   it("hides the tooltip on mouse leave", async () => {
