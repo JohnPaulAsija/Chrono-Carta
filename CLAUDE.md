@@ -94,6 +94,8 @@ Below ~768px, render a "best on a larger screen" message rather than a degraded 
 
 **Architecture doc as living source:** [chrono-carta-architecture.md](chrono-carta-architecture.md) is the source of truth and stays accurate as the code evolves. Drift between the doc and the code is treated as a bug — fix the doc in the same PR as the change.
 
+**Plans and design docs are scratch, not artifacts.** Brainstorming notes, design docs, and implementation plans (typically `docs/plans/YYYY-MM-DD-*.md`) are working scaffolding — useful while a change is in flight, not part of the codebase's record. They are **not** committed. The architecture doc is the durable home for any decision worth preserving; the commit message is the durable home for the *why* of a specific change. `docs/plans/` is `.gitignore`d to enforce this; the few historical plans that were committed before this rule landed are left in place as history but no new ones get added.
+
 ## Environment Variables
 
 | Variable | Where | Purpose |

@@ -54,6 +54,11 @@ public/data/cliopatria-0.0.1/cliopatria.geojson.zip
 # per the using-git-worktrees skill convention.
 .worktrees/
 
+# Plans and design docs are working scaffolding, not committed artifacts.
+# See CLAUDE.md "Plans and design docs are scratch, not artifacts." The
+# handful of plans that pre-date this rule remain tracked as history.
+docs/plans/
+
 # Misc
 *.pem
 /.claude
