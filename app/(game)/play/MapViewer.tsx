@@ -14,6 +14,7 @@ import {
 } from "@vnedyalk0v/react19-simple-maps";
 import { feature } from "topojson-client";
 import landTopology from "world-atlas/land-50m.json";
+import countriesTopology from "world-atlas/countries-50m.json";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
 import type { MapFeature, MapFeatureCollection } from "./types";
@@ -25,6 +26,13 @@ const LAND_FEATURES = feature(
     .land,
 ) as FeatureCollection;
 
+// Same pattern for modern country borders; `objects.countries` per world-atlas README.
+const COUNTRY_BORDERS = feature(
+  countriesTopology as unknown as Topology<{ countries: GeometryCollection }>,
+  (countriesTopology as unknown as Topology<{ countries: GeometryCollection }>)
+    .objects.countries,
+) as FeatureCollection;
+
 export interface MapViewerProps {
   geojson: MapFeatureCollection;
   center?: [number, number];
@@ -32,6 +40,7 @@ export interface MapViewerProps {
   highlightedEntity?: string | null;
   onHighlight?: (name: string | null) => void;
   labeledEntities?: MapFeature[];
+  showBorders?: boolean;
 }
 
 export function MapViewer({
@@ -41,6 +50,7 @@ export function MapViewer({
   highlightedEntity: controlledHighlight,
   onHighlight,
   labeledEntities,
+  showBorders = false,
 }: MapViewerProps) {
   const [internalHighlight, setInternalHighlight] = useState<string | null>(
     null,
@@ -109,6 +119,31 @@ export function MapViewer({
               ))
             }
           </Geographies>
+          {showBorders && (
+            <Geographies
+              geography={COUNTRY_BORDERS}
+              data-layer="modern-borders"
+            >
+              {({ geographies }) =>
+                geographies.map((geo, i) => (
+                  <Geography
+                    key={`border-${i}`}
+                    geography={geo}
+                    fill="none"
+                    stroke="#333"
+                    strokeWidth={0.75}
+                    strokeOpacity={0.9}
+                    vectorEffect="non-scaling-stroke"
+                    style={{
+                      default: { outline: "none", pointerEvents: "none" },
+                      hover: { outline: "none", pointerEvents: "none" },
+                      pressed: { outline: "none", pointerEvents: "none" },
+                    }}
+                  />
+                ))
+              }
+            </Geographies>
+          )}
           {labeledEntities?.map((feature) => {
             const c =
               feature.geometry.type === "MultiPolygon"

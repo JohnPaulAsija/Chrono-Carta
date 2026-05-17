@@ -33,6 +33,7 @@ export function MapPanel({
   );
   const [center, setCenter] = useState<[number, number]>(initialCenter);
   const [zoom, setZoom] = useState(initialZoom);
+  const [showBorders, setShowBorders] = useState(false);
 
   const labeled = useMemo(
     () => topByArea(geojson.features, MAX_LABELS),
@@ -67,20 +68,34 @@ export function MapPanel({
 
   return (
     <div className="grid h-full grid-cols-[65%_1fr] gap-4">
-      <div className="relative min-h-0 overflow-hidden">
-        <MapViewer
-          geojson={geojson}
-          center={center}
-          zoom={zoom}
-          highlightedEntity={highlightedEntity}
-          onHighlight={setHighlightedEntity}
-          labeledEntities={labeled}
-        />
-        <ZoomControls
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onReset={handleReset}
-        />
+      <div className="relative flex min-h-0 flex-col overflow-hidden">
+        <div className="shrink-0 flex justify-end pb-2">
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <input
+              type="checkbox"
+              checked={showBorders}
+              onChange={(e) => setShowBorders(e.target.checked)}
+              className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600"
+            />
+            Modern borders
+          </label>
+        </div>
+        <div className="relative min-h-0 flex-1">
+          <MapViewer
+            geojson={geojson}
+            center={center}
+            zoom={zoom}
+            highlightedEntity={highlightedEntity}
+            onHighlight={setHighlightedEntity}
+            labeledEntities={labeled}
+            showBorders={showBorders}
+          />
+          <ZoomControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onReset={handleReset}
+          />
+        </div>
       </div>
       <div className="min-h-0 overflow-y-auto">
         <Legend
